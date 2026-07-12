@@ -1,0 +1,33 @@
+version: "3.9"
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: kuprin
+      POSTGRES_PASSWORD: kuprin_dev
+      POSTGRES_DB: kuprin
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
+
+  records-service:
+    build: ./services/records-service
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql://kuprin:kuprin_dev@postgres:5432/kuprin
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      - postgres
+      - redis
+    volumes:
+      - ./services/records-service:/app
+
+volumes:
+  pgdata:
