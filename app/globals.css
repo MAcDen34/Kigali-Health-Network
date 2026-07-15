@@ -1,0 +1,41 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html { font-family: 'Inter', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+  body { @apply bg-h-bg text-h-text; }
+}
+
+@layer components {
+  .btn-primary   { @apply inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-white bg-h-blue rounded-xl hover:bg-h-blue-dark active:scale-[0.98] transition-all shadow-btn; }
+  .btn-secondary { @apply inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-h-text bg-white border border-h-border rounded-xl hover:bg-h-bg active:scale-[0.98] transition-all; }
+  .btn-danger    { @apply inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-white bg-h-red rounded-xl hover:opacity-90 active:scale-[0.98] transition-all; }
+  .btn-teal      { @apply inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-white bg-h-teal rounded-xl hover:bg-h-teal-dark active:scale-[0.98] transition-all; }
+  .card          { @apply bg-white rounded-2xl border border-h-border shadow-card; }
+  .card-hover    { @apply bg-white rounded-2xl border border-h-border shadow-card transition-all duration-300 hover:shadow-card-hover hover:-translate-y-0.5; }
+  .input-field   { @apply w-full px-3 py-2.5 text-sm border border-h-border rounded-xl focus:outline-none focus:ring-2 focus:ring-h-blue/25 focus:border-h-blue transition-colors bg-white placeholder:text-h-text-light; }
+  .page-header   { @apply flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6; }
+  .page-title    { @apply text-2xl font-bold text-h-text; }
+  .page-subtitle { @apply text-sm text-h-text-muted mt-0.5; }
+  .section-title { @apply text-base font-semibold text-h-text mb-4; }
+  .tab-active    { @apply text-h-blue border-b-2 border-h-blue font-semibold; }
+  .tab-inactive  { @apply text-h-text-muted hover:text-h-text border-b-2 border-transparent transition-colors; }
+}
+
+@layer utilities {
+  .scrollbar-thin { scrollbar-width: thin; scrollbar-color: #E1E8F0 transparent; }
+  .scrollbar-thin::-webkit-scrollbar { width: 5px; height: 5px; }
+  .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
+  .scrollbar-thin::-webkit-scrollbar-thumb { background-color: #E1E8F0; border-radius: 4px; }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; } 100% { background-position: 200% 0; }
+}
+.animate-shimmer {
+  background: linear-gradient(90deg, #F3F7FB 25%, #E1E8F0 50%, #F3F7FB 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}

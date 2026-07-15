@@ -1,240 +1,36 @@
-# Kigali Unified Patient Records & Insurance Network
+This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
 
-**A permissioned, interoperable health data platform for clinics, hospitals, pharmacies and insurance providers in Kigali, Rwanda.**
+## Getting Started
 
-ALU Enterprise Systems Project — BSc. in Software Engineering
-
----
-
-## What this is
-
-Patient medical records in Kigali are siloed within individual hospitals and clinics. When a patient switches providers, visits a specialist, or needs emergency care, their history does not travel with them. This causes redundant diagnostic testing, drug interaction risks, delayed emergency care, and insurance claim friction.
-
-This platform provides a consent-first, role-based network that lets verified institutions securely share patient records — while keeping the patient in control and all diagnostic authority with licensed medical professionals.
-
-> This is a decision-support system, not a decision-making one. It flags interactions and duplicates. It never prescribes.
-
----
-
-## Frontend (this repo)
-
-React 19 + Vite 8 + Tailwind CSS v4. Five role-specific dashboards, dark/light mode, simulated RBAC.
-
-| Layer | Choice |
-|---|---|
-| Framework | React 19 + Vite 8 |
-| Styling | Tailwind CSS v4 (Vite plugin) |
-| Routing | React Router v7 |
-| Icons | Lucide React |
-| Fonts | Inter · Fraunces · IBM Plex Mono |
-
----
-
-## Full system architecture
-
-```
-Browser / Frontends
-       |
-       v
-  HAProxy :80           <- single entry point, path-based routing
-       |
-  records-service :8000        clinical-service :8001
-  pharmacy-service :8002       insurance-service :8003
-  admin-service :8004          notification-service :8005
-       |
-  PostgreSQL 16          Redis 7 Pub/Sub
-  (per-service schemas)  (async events)
-```
-
-### Microservices
-
-| Service | Port | Responsibility |
-|---|---|---|
-| Records & Consent | 8000 | Profiles, history, consent, audit log |
-| Clinical Service | 8001 | Diagnosis, vitals, interaction flags |
-| Pharmacy Service | 8002 | Prescription verification, dispensing |
-| Insurance Service | 8003 | Coverage checks, claims tracking |
-| Admin Service | 8004 | Institutions, API tokens, audit |
-| Notification Service | 8005 | Redis subscriber — SMS/email alerts |
-
-### Event flow (prescription creation)
-
-```
-Doctor submits  ->  Clinical Service (REST POST)
-Validate consent  ->  Records Service (REST GET)
-Write & publish  ->  Redis: prescription_created
-  |-- Pharmacy (async)   -> interaction/duplicate check
-  |-- Insurance (async)  -> coverage pre-validation
-  +-- Notification (async) -> SMS/email to patient + pharmacy
-```
-
-Steps 3-5 run concurrently. No service blocks on another.
-
----
-
-## Dashboards
-
-| Role | Route | What they can do |
-|---|---|---|
-| Patient | `/patient` | View records, manage consent, audit log |
-| Doctor | `/clinic` | Patient list, consent-gated history, prescriptions |
-| Nurse | `/clinic` | Vitals entry, limited history view |
-| Pharmacist | `/pharmacy` | Prescription queue, flags, dispense |
-| Insurance Agent | `/insurance` | Claims queue, approve/reject/pay |
-| Platform Admin | `/admin` | Institutions, API tokens, health, audit |
-
----
-
-## Getting started
-
-### Prerequisites
-
-- Node.js 18+
-- npm 9+
-
-### Install and run
+First, run the development server:
 
 ```bash
-git clone https://github.com/your-org/kigali-health-network.git
-cd kigali-health-network
-npm install
-cp .env.example .env
 npm run dev
-# -> http://localhost:5173
+# or
+yarn dev
+# or
+pnpm dev
+# or
+bun dev
 ```
 
-Select any role on the login screen. No credentials needed in prototype mode.
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-### Build for production
+You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
 
-```bash
-npm run build
-# Output: dist/ — serve with Nginx, Vercel, Netlify, etc.
-```
+This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
 
-### Connect to the live backend
+## Learn More
 
-1. Set `VITE_API_BASE_URL=http://your-server/api` in `.env`
-2. In `src/data/api.js` uncomment the `apiFetch()` calls and delete the mock returns
-3. `npm run build` and deploy `dist/`
+To learn more about Next.js, take a look at the following resources:
 
----
+- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
+- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
 
-## Project structure
+You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
 
-```
-src/
-|-- context/
-|   |-- AuthContext.jsx       # JWT auth + RBAC login
-|   +-- ThemeContext.jsx      # Dark/light mode (localStorage)
-|
-|-- data/
-|   |-- mockData.js           # All mock records, patients, claims
-|   +-- api.js                # API layer (mock <-> real fetch toggle)
-|
-|-- components/
-|   |-- Primitives.jsx        # Badge, Card, StatTile, SectionHeading
-|   +-- ProtectedRoute.jsx    # RBAC route wrapper
-|
-|-- layouts/
-|   +-- AppShell.jsx          # Sidebar + topbar
-|
-|-- pages/
-|   |-- Login.jsx             # Role selection
-|   |-- PatientPortal.jsx     # Patient dashboard
-|   |-- ClinicDashboard.jsx   # Doctor/Nurse dashboard
-|   |-- PharmacyDashboard.jsx # Pharmacy dashboard
-|   |-- InsuranceDashboard.jsx# Insurance dashboard
-|   +-- AdminDashboard.jsx    # Admin dashboard
-|
-|-- App.jsx                   # Router + layout
-|-- main.jsx                  # React root
-+-- index.css                 # Tailwind v4 + CSS theme tokens
-```
+## Deploy on Vercel
 
----
+The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
-## Colour system
-
-| Token | Light | Dark |
-|---|---|---|
-| `--color-surface` | `#FFFFFF` | `#14191F` |
-| `--color-surface-alt` | `#F4F8FC` | `#1A2029` |
-| `--color-brand` | `#1857C9` | `#4C8DFF` |
-| `--color-accent` | `#0EA5C9` | `#38C6E8` |
-| `--color-text` | `#0E1B2C` | `#EAF0F8` |
-| `--color-border` | `#DCE6F0` | `#2A3340` |
-
----
-
-## Security model
-
-| Mechanism | Implementation |
-|---|---|
-| Authentication | JWT with role + institutionId claims |
-| Authorisation | RBAC via ProtectedRoute allow-list |
-| Consent gate | Doctors blocked from history without active patient consent |
-| Audit trail | Every record access logged: actor, institution, timestamp |
-| API tokens | Per-institution tokens managed by Admin Service |
-| Data minimisation | Insurance sees billing codes only, no clinical notes |
-
-Aligned with Rwanda Law No. 058/2021 on Personal Data Protection and Privacy.
-
----
-
-## Backend quick start (Docker Compose)
-
-```bash
-cd infra
-docker compose build
-docker compose up -d
-docker compose ps
-
-# Migrations
-docker compose exec records-service alembic upgrade head
-docker compose exec pharmacy-service alembic upgrade head
-docker compose exec insurance-service alembic upgrade head
-docker compose exec admin-service alembic upgrade head
-
-# Smoke test
-curl http://localhost/api/records/health
-curl http://localhost/api/pharmacy/health
-```
-
----
-
-## Scripts
-
-| Command | What it does |
-|---|---|
-| `npm run dev` | Vite dev server with HMR |
-| `npm run build` | Production build to `dist/` |
-| `npm run preview` | Preview the production build |
-
----
-
-## Team
-
-| Member | Role | Owns |
-|---|---|---|
-| TBD | Lead Backend / Pair A | Records & Consent, Clinical Service |
-| TBD | Backend / Pair A | Clinical Service, Clinic Dashboard |
-| TBD | Backend / Pair B | Pharmacy Service, Pharmacy Dashboard |
-| TBD | Backend / Pair B | Insurance Service, Insurance Dashboard |
-| TBD | Infrastructure / Solo | Admin Service, Docker, HAProxy, CI/CD |
-
----
-
-## Roadmap
-
-- [ ] Wire all pages to live FastAPI endpoints (swap mocks in `api.js`)
-- [ ] Patient registration flow
-- [ ] Real-time notification badge (WebSocket / SSE)
-- [ ] OpenAPI client auto-generation from FastAPI docs
-- [ ] Mobile sidebar drawer
-- [ ] FHIR R4 compliance layer
-- [ ] Multi-city expansion
-
----
-
-*Prototype interface only. No real patient data is stored or processed.*
+Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
