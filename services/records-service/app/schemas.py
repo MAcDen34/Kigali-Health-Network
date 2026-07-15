@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from uuid import UUID
 from datetime import date, datetime
 from typing import Optional
@@ -7,13 +7,11 @@ class PatientCreate(BaseModel):
     national_id: str
     dob: date
     blood_group: Optional[str] = None
-    allergies: list[str] = Field(default_factory=list)
+    allergies: list[str] = []
 
 class PatientOut(PatientCreate):
     id: UUID
     class Config:
-        orm_mode = True
-        # allow compatibility with pydantic v2 attribute loading
         from_attributes = True
 
 class ConsentGrantCreate(BaseModel):
@@ -27,6 +25,4 @@ class ConsentOut(BaseModel):
     granted_at: datetime
     revoked_at: Optional[datetime]
     class Config:
-        orm_mode = True
-        # allow compatibility with pydantic v2 attribute loading
         from_attributes = True
