@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from .database import Base, engine
-from .routers import consent, patients
+from .routers import consent, patients, medical_records
 
 app = FastAPI(title="Records & Consent Service")
 
@@ -10,6 +10,7 @@ def startup():
 
 app.include_router(consent.router)
 app.include_router(patients.router)
+app.include_router(medical_records.router)
 
 @app.get("/health")
 def health():

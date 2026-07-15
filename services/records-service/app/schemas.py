@@ -26,3 +26,24 @@ class ConsentOut(BaseModel):
     revoked_at: Optional[datetime]
     class Config:
         from_attributes = True
+
+class MedicalRecordCreate(BaseModel):
+    patient_id: UUID
+    type: str
+    content: dict
+
+class MedicalRecordOut(MedicalRecordCreate):
+    id: UUID
+    created_at: datetime
+    class Config:
+        from_attributes = True
+
+class AuditLogOut(BaseModel):
+    id: UUID
+    actor_id: UUID
+    patient_id: UUID
+    action: str
+    timestamp: datetime
+    ip_address: Optional[str] = None
+    class Config:
+        from_attributes = True
