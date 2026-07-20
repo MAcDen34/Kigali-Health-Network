@@ -29,5 +29,18 @@ services:
     volumes:
       - ./services/records-service:/app
 
+  pharmacy-service:
+    build: ./services/pharmacy-service
+    ports:
+      - "8002:8002"
+    environment:
+      DATABASE_URL: postgresql://kuprin:kuprin_dev@postgres:5432/kuprin
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      - postgres
+      - redis
+    volumes:
+      - ./services/pharmacy-service:/app
+
 volumes:
   pgdata:
