@@ -1,0 +1,77 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER:     kuprin
+      POSTGRES_PASSWORD: kuprin_dev
+      POSTGRES_DB:       kuprin
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kuprin"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      retries: 5
+
+  records-service:
+    build: ./services/records-service
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL:          postgresql://kuprin:kuprin_dev@postgres:5432/kuprin
+      REDIS_URL:             redis://redis:6379/0
+      JWT_SECRET:            ${JWT_SECRET:-dev-secret-change-in-production}
+      JWT_EXPIRY_MINUTES:    60
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./services/records-service:/app
+
+  admin-service:
+    build: ./services/admin-service
+    ports:
+      - "8004:8004"
+    environment:
+      DATABASE_URL:       postgresql://kuprin:kuprin_dev@postgres:5432/kuprin
+      JWT_SECRET:         ${JWT_SECRET:-dev-secret-change-in-production}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./services/admin-service:/app
+
+  clinical-service:
+    build: ./services/clinical-service
+    ports:
+      - "8001:8001"
+    environment:
+      DATABASE_URL:          postgresql://kuprin:kuprin_dev@postgres:5432/kuprin
+      REDIS_URL:             redis://redis:6379/0
+      RECORDS_SERVICE_URL:   http://records-service:8000
+      JWT_SECRET:            ${JWT_SECRET:-dev-secret-change-in-production}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      records-service:
+        condition: service_started
+    volumes:
+      - ./services/clinical-service:/app
+
+volumes:
+  pgdata:

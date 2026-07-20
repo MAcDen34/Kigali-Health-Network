@@ -1,14 +1,31 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
 import Badge from '@/components/ui/Badge';
 import KPICard from '@/components/ui/KPICard';
 import { ShieldCheck, ShieldOff, Clock3, FileText, AlertTriangle, Activity, CheckCircle2 } from 'lucide-react';
+import { getPatient } from '@/lib/api';
 
 const TYPE_TONE = { Diagnosis:'blue', 'Lab Result':'teal', Vitals:'green', Prescription:'purple' };
 
 export default function RecordsPage() {
   const { state, dispatch } = useApp();
+  const [realPatient, setRealPatient] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    getPatient("82e6c070-9fef-4869-82b2-4ac45e7b7d30")
+      .then(data => {
+        setRealPatient(data);
+        setLoading(false);
+      })
+      .catch(err => {
+        setError(err.message);
+        setLoading(false);
+      });
+  }, []);
+
   const { patientProfile, consents, medicalHistory, auditLog } = state;
   const [tab, setTab] = useState('history');
   const active = consents.filter(c => c.status === 'active').length;
@@ -28,40 +45,44 @@ export default function RecordsPage() {
       <div className="grid lg:grid-cols-3 gap-5">
         {/* Profile card */}
         <div className="card p-5 lg:col-span-1 h-fit">
-          <div className="flex items-center gap-3 mb-4 pb-4 border-b border-h-border">
-            <div className="w-12 h-12 rounded-2xl bg-h-teal-light text-h-teal text-base font-bold flex items-center justify-center">
-              {patientProfile.name.split(' ').map(n=>n[0]).join('')}
-            </div>
-            <div>
-              <p className="font-semibold text-h-text">{patientProfile.name}</p>
-              <p className="text-xs text-h-text-muted">Patient ID: {patientProfile.id}</p>
-            </div>
-          </div>
-          <dl className="space-y-3 text-sm">
-            {[
-              ['Date of birth', patientProfile.dob],
-              ['Blood group',   patientProfile.bloodGroup],
-              ['Phone',         patientProfile.phone],
-              ['Address',       patientProfile.address],
-            ].map(([k,v]) => (
-              <div key={k} className="flex justify-between gap-2">
-                <dt className="text-h-text-muted flex-shrink-0">{k}</dt>
-                <dd className="text-h-text font-medium text-right">{v}</dd>
+          {loading && <p className="text-sm text-h-text-muted">Loading patient...</p>}
+          {error && <p className="text-sm text-red-500">Error: {error}</p>}
+          {(!loading && !error && realPatient) && (
+            <>
+              <div className="flex items-center gap-3 mb-4 pb-4 border-b border-h-border">
+                <div className="w-12 h-12 rounded-2xl bg-h-teal-light text-h-teal text-base font-bold flex items-center justify-center">
+                  RP
+                </div>
+                <div>
+                  <p className="font-semibold text-h-text">Real Patient (Live Data)</p>
+                  <p className="text-xs text-h-text-muted">Patient ID: {realPatient.id}</p>
+                </div>
               </div>
-            ))}
-            <div className="flex justify-between gap-2">
-              <dt className="text-h-text-muted flex-shrink-0">National ID</dt>
-              <dd className="text-h-text font-mono text-xs text-right">{patientProfile.nationalId}</dd>
-            </div>
-          </dl>
-          <div className="mt-4 pt-4 border-t border-h-border">
-            <p className="text-xs font-semibold text-h-text-muted uppercase tracking-wide mb-2 flex items-center gap-1.5">
-              <AlertTriangle className="w-3.5 h-3.5 text-h-amber" /> Allergies on file
-            </p>
-            <div className="flex flex-wrap gap-1.5">
-              {patientProfile.allergies.map(a => <Badge key={a} tone="amber">{a}</Badge>)}
-            </div>
-          </div>
+              <dl className="space-y-3 text-sm">
+                {[
+                  ['Date of birth', realPatient.dob],
+                  ['Blood group',   realPatient.blood_group],
+                ].map(([k,v]) => (
+                  <div key={k} className="flex justify-between gap-2">
+                    <dt className="text-h-text-muted flex-shrink-0">{k}</dt>
+                    <dd className="text-h-text font-medium text-right">{v}</dd>
+                  </div>
+                ))}
+                <div className="flex justify-between gap-2">
+                  <dt className="text-h-text-muted flex-shrink-0">National ID</dt>
+                  <dd className="text-h-text font-mono text-xs text-right">{realPatient.national_id}</dd>
+                </div>
+              </dl>
+              <div className="mt-4 pt-4 border-t border-h-border">
+                <p className="text-xs font-semibold text-h-text-muted uppercase tracking-wide mb-2 flex items-center gap-1.5">
+                  <AlertTriangle className="w-3.5 h-3.5 text-h-amber" /> Allergies on file
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {realPatient.allergies.map(a => <Badge key={a} tone="amber">{a}</Badge>)}
+                </div>
+              </div>
+            </>
+          )}
         </div>
 
         {/* Tabs: history / consent / audit */}
