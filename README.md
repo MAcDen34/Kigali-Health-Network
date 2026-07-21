@@ -1,13 +1,227 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# KUPRIN — Kigali Unified Patient Records & Insurance Network
+
+A permissioned, interoperable health data platform connecting clinics, hospitals, pharmacies, and insurance providers across Kigali, Rwanda.
+
+**One city. Every patient. One secure network.**
+
+> ALU Enterprise Systems Project · BSc. Software Engineering
+
+---
+
+## The Problem
+
+Patient records in Kigali are siloed within individual providers. This causes:
+
+- **Redundant diagnostics** — the same tests get repeated because prior results are inaccessible across providers
+- **Drug interaction risk** — pharmacists lack a complete medication history for patients treated across multiple facilities
+- **Delayed emergency care** — allergies and chronic conditions are unknown to attending teams in urgent situations
+- **Insurance claim friction** — Mutuelle/RSSB documentation is scattered, slowing reimbursement cycles
+
+## The Solution
+
+A consent-gated, event-driven microservices platform where:
+- Every cross-provider data access requires active patient consent (**fail-closed** by design — if consent can't be verified, access is denied, not silently allowed)
+- Services communicate over REST for synchronous queries and Redis Pub/Sub for asynchronous fan-out events
+- All access is audit-logged
+- Clinical decision support only — final diagnosis always stays with the doctor
+
+Aligned with Rwanda Law No. 058/2021 on Personal Data Protection and Privacy.
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Backend | Python 3.12, FastAPI |
+| Database | PostgreSQL 16 (single instance, isolated schema per service) |
+| Async events | Redis 7 (Pub/Sub) |
+| Frontend | React 19, Next.js 14, Tailwind CSS |
+| Containerization | Docker & Docker Compose |
+| Testing | Pytest, httpx |
+| Planned | HAProxy (path-based routing), Alembic migrations |
+
+---
+
+## Architecture
+
+Six planned microservices, each owning an isolated PostgreSQL schema (`records.*`, `pharmacy.*`, `clinical.*`, `insurance.*`, `admin.*`, notifications), communicating via REST for synchronous calls and Redis for async fan-out. Cross-schema SQL joins are explicitly disallowed by design — services only talk to each other over the network, never by reaching into another service's tables directly.
+
+```
+                     ┌──────────────────┐
+                     │   Next.js         │
+                     │   Frontend        │
+                     │  (5 role portals) │
+                     └────────┬──────────┘
+                              │ REST (fetch)
+              ┌───────────────┼───────────────────┐
+              ▼               ▼                   ▼
+     ┌──────────────┐  ┌──────────────┐   ┌──────────────┐
+     │   Records &  │  │   Pharmacy   │   │  (planned)   │
+     │   Consent    │  │   Service    │   │   Clinical,  │
+     │   :8000      │  │   :8002      │   │   Insurance, │
+     └──────┬───────┘  └──────┬───────┘   │   Admin,     │
+            │                 │           │   Notify     │
+            └────────┬────────┘           └──────────────┘
+                      ▼
+          ┌───────────────────────┐
+          │   PostgreSQL 16        │
+          │  records.* pharmacy.*  │
+          └───────────────────────┘
+                      │
+                      ▼
+              ┌───────────────┐
+              │   Redis 7      │
+              │   Pub/Sub       │
+              └───────────────┘
+```
+
+---
+
+## Service Status
+
+| Service | Status | Notes |
+|---|---|---|
+| **Records & Consent** | ✅ Built & tested | Patients, consent grant/check/revoke (fail-closed), medical records, actor-header audit logging |
+| **Pharmacy** | ✅ Built & tested | Prescriptions, dispensing (with cross-service status updates and a double-dispense guard), interaction flags |
+| **Frontend** | ✅ Built | Next.js, 5 role-based dashboards; one live-wired connection to Records service, rest on mock data |
+| Clinical | 🔜 Planned | Diagnoses, vitals, treatment plans |
+| Insurance | 🔜 Planned | Coverage checks, claims |
+| Admin | 🔜 Planned | Institution/staff management |
+| Notification | 🔜 Planned | Redis-subscribed reminders and alerts |
+| Auth (JWT/RBAC) | 🔜 Planned | Currently using a lightweight actor-header dependency as an MVP stand-in |
+
+---
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+- Docker Desktop
+- Node.js (for the frontend)
+- Python 3.12+ (only needed if running a service outside Docker, e.g. for tests)
+
+### 1. Start the database, cache, and backend services
+
+From the repository root:
 
 ```bash
+docker compose up --build
+```
+
+This brings up PostgreSQL, Redis, `records-service` (port `8000`), and `pharmacy-service` (port `8002`).
+
+First time only — create the schemas:
+
+```bash
+docker exec -it $(docker ps -qf "name=postgres") psql -U kuprin -d kuprin -c "CREATE SCHEMA IF NOT EXISTS records; CREATE SCHEMA IF NOT EXISTS pharmacy;"
+```
+
+Verify each service is alive:
+
+```bash
+curl http://localhost:8000/health
+curl http://localhost:8002/health
+```
+
+Interactive API docs (Swagger UI, auto-generated by FastAPI):
+- Records & Consent: [http://localhost:8000/docs](http://localhost:8000/docs)
+- Pharmacy: [http://localhost:8002/docs](http://localhost:8002/docs)
+
+### 2. Start the frontend
+
+```bash
+npm install
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Then open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+> **Note:** the frontend runs on `localhost:3000` and the backend on separate ports, so CORS is enabled on the backend to allow browser requests between them during local development.
+
+---
+
+## Running Tests
+
+Each service has its own virtual environment and test suite (transaction-rollback pattern — tests never leave data behind in the real database).
+
+```bash
+cd services/records-service
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+pytest -v
+```
+
+Repeat the same steps inside `services/pharmacy-service` to run its suite.
+
+**Current coverage:**
+- `records-service` — 5 tests (health check, patient create/404, full consent grant→check→revoke→check-fails flow with audit logging)
+- `pharmacy-service` — 5 tests (prescription create/404, dispensing status flip, double-dispense guard)
+
+---
+
+## Project Structure
+
+```
+Kigali-Health-Network/
+├── app/                        # Next.js frontend (App Router)
+├── components/                 # Shared React components
+├── context/                    # Frontend app state
+├── lib/                        # Frontend API client (fetch helpers)
+├── services/
+│   ├── records-service/        # Patients, consent, medical records, audit
+│   ├── pharmacy-service/       # Prescriptions, dispensing, interaction flags
+│   ├── clinical-service/       # Planned
+│   ├── insurance-service/      # Planned
+│   ├── admin-service/          # Planned
+│   └── notification-service/   # Planned
+├── docker-compose.yml
+└── README.md
+```
+
+Each backend service follows the same internal layout:
+```
+service-name/
+├── app/
+│   ├── main.py          # FastAPI app + router registration
+│   ├── database.py      # SQLAlchemy engine/session setup
+│   ├── models.py        # SQLAlchemy ORM models
+│   ├── schemas.py        # Pydantic request/response schemas
+│   └── routers/          # One router file per resource
+├── tests/
+├── Dockerfile
+└── requirements.txt
+```
+
+---
+
+## Design Notes
+
+- **Consent is fail-closed.** If the Records service can't confirm active consent, access is denied — never assumed.
+- **No cross-schema SQL joins.** Even though all services currently share one PostgreSQL instance, tables in one schema never reference tables in another via a database-level foreign key. Cross-service references are plain UUIDs, verified over REST if needed — this keeps the services genuinely decoupled and mirrors how they'd behave with fully separate databases in production.
+- **Audit logging** is implemented via a `get_current_actor` FastAPI dependency that reads an `X-Actor-Id` header. This is a deliberate, temporary stand-in for full JWT/RBAC authentication — the interface is designed so real auth can be swapped in later without changing every route that depends on it.
+
+---
+
+## Team & Ownership
+
+| Area | Owner(s) |
+|---|---|
+| Records & Consent, Pharmacy, integration, testing | Denzel |
+| Frontend (Next.js dashboards) | Gevz |
+| Database schema / migrations | — |
+
+Weekly standups · GitHub Projects sprint board.
+
+---
+
+## References
+
+- FastAPI — [fastapi.tiangolo.com](https://fastapi.tiangolo.com) (MIT)
+- PostgreSQL 16 — [postgresql.org](https://postgresql.org)
+- Redis 7 — [redis.io](https://redis.io) (BSD 3-Clause)
+- React 19 / Next.js — [react.dev](https://react.dev) / [nextjs.org](https://nextjs.org) (MIT)
+- Tailwind CSS — [tailwindcss.com](https://tailwindcss.com) (MIT)
+- Republic of Rwanda (2021). *Law No. 058/2021 on Personal Data Protection and Privacy.*
+
+All libraries used under their respective open-source licenses. No proprietary APIs used in this prototype.
