@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .database import Base, engine
-from .routers import institutions, staff, audit
+from .routers import institutions, staff, audit, auth
 
 app = FastAPI(
     title="Admin & Platform Service",
@@ -24,6 +24,7 @@ def startup():
 app.include_router(institutions.router)
 app.include_router(staff.router)
 app.include_router(audit.router)
+app.include_router(auth.router)
 
 @app.get("/health")
 def health():

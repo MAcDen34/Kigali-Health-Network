@@ -1,5 +1,5 @@
 """
-Auth router — POST /api/records/auth/login
+Auth router — POST /api/admin/auth/login
 Returns a signed JWT containing role + staff_id + institution_id claims.
 The frontend swaps the demo-pill session for this real token on login.
 """
@@ -15,7 +15,7 @@ import os
 from ..database import get_db
 from .. import models
 
-router = APIRouter(prefix="/api/records/auth", tags=["auth"])
+router = APIRouter(prefix="/api/admin/auth", tags=["auth"])
 
 JWT_SECRET    = os.getenv("JWT_SECRET", "dev-secret-change-in-production")
 JWT_ALGORITHM = "HS256"
@@ -58,7 +58,7 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)):
     Returns a JWT with role claims embedded.
 
     Frontend usage:
-        POST /api/records/auth/login
+        POST /api/admin/auth/login
         Body: { email, password }
         → { access_token, role, name, institution_id, institution }
 
