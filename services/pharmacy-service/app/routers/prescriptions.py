@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from uuid import UUID
 from .. import models, schemas
 from ..database import get_db
+from ..events import publish_prescription_created
 
 router = APIRouter(prefix="/api/pharmacy", tags=["prescriptions"])
 
@@ -12,6 +13,9 @@ def create_prescription(payload: schemas.PrescriptionCreate, db: Session = Depen
     db.add(prescription)
     db.commit()
     db.refresh(prescription)
+
+    publish_prescription_created(prescription)
+
     return prescription
 
 @router.get("/prescriptions/{prescription_id}", response_model=schemas.PrescriptionOut)
