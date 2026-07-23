@@ -14,6 +14,7 @@ from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
+# revision identifiers, used by Alembic.
 revision: str = "0001"
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
@@ -21,7 +22,7 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    
+    # create_all() never makes the schema namespace, so do it first.
     op.execute("CREATE SCHEMA IF NOT EXISTS records")
 
     op.create_table(
@@ -145,4 +146,7 @@ def downgrade() -> None:
     op.drop_table("medical_records", schema="records")
     op.drop_table("consent_grants", schema="records")
     op.drop_table("patients", schema="records")
-    op.execute("DROP SCHEMA IF EXISTS records CASCADE")
+    # NOTE: the "records" schema is intentionally NOT dropped here.
+    # Alembic's version table (records.alembic_version) lives inside it, and
+    # dropping the schema would destroy that table before Alembic can record
+    # the downgrade — which fails the migration.
