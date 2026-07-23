@@ -49,6 +49,7 @@ services:
     environment:
       DATABASE_URL: postgresql://kuprin:kuprin_dev@postgres:5432/kuprin
       REDIS_URL: redis://redis:6379
+      JWT_SECRET: "960ff9467b8635b47fac30876f4d377e750d501b7686cc3401de8d9af6d540bb"
     depends_on:
       - postgres
       - redis
@@ -62,6 +63,7 @@ services:
     environment:
       DATABASE_URL: postgresql://kuprin:kuprin_dev@postgres:5432/kuprin
       REDIS_URL: redis://redis:6379
+      JWT_SECRET: "960ff9467b8635b47fac30876f4d377e750d501b7686cc3401de8d9af6d540bb"
       RECORDS_SERVICE_URL: http://records-service:8000
     depends_on:
       - postgres
