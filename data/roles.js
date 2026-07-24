@@ -7,24 +7,27 @@ export const ROLES = {
   INSURANCE_AGENT:   'Insurance Agent',
 };
 
-// Nav access per role
+// Notifications is reached via the header bell, not listed here.
 export const ROLE_NAV = {
-  PLATFORM_ADMIN:  ['dashboard','admin','notifications','audit'],
-  PATIENT:         ['dashboard','records','notifications'],
-  DOCTOR:          ['dashboard','clinic','notifications'],
-  NURSE:           ['dashboard','clinic','notifications'],
-  PHARMACIST:      ['dashboard','pharmacy','notifications'],
-  INSURANCE_AGENT: ['dashboard','insurance','notifications'],
+  PLATFORM_ADMIN:  ['dashboard','admin','audit'],
+  PATIENT:         ['dashboard','records'],
+  DOCTOR:          ['dashboard','clinic'],
+  NURSE:           ['dashboard','clinic'],
+  PHARMACIST:      ['dashboard','pharmacy'],
+  INSURANCE_AGENT: ['dashboard','insurance'],
 };
 
-// Accent colour per role (used for sidebar active state)
+// Account-level pages every role may reach regardless of ROLE_NAV.
+export const ALWAYS_ALLOWED_ROUTES = ['dashboard', 'profile', 'notifications'];
+
+// Red excluded on purpose — reserved for danger/alert states, not identity.
 export const ROLE_ACCENT = {
-  PLATFORM_ADMIN:  '#DC2626',
-  PATIENT:         '#0B9B8A',
-  DOCTOR:          '#1B6EF3',
-  NURSE:           '#2DB37E',
-  PHARMACIST:      '#E8710A',
-  INSURANCE_AGENT: '#7C3AED',
+  PLATFORM_ADMIN:  '#5B4E8C',
+  PATIENT:         '#358573',
+  DOCTOR:          '#3E6B8A',
+  NURSE:           '#5A9B5C',
+  PHARMACIST:      '#CC8A38',
+  INSURANCE_AGENT: '#7D5BA6',
 };
 
 export const DEMO_USERS = [
