@@ -20,9 +20,7 @@ export default function ClinicPage() {
   );
   const [highlightId, setHighlightId] = useState(null);
 
-  // Deep-linked from header search — jump to that patient even if the page
-  // was already mounted on a different one, scroll their row into view, and
-  // flash it so it's obvious the search actually landed on them.
+  // Deep-linked from header search: select, scroll into view, flash.
   useEffect(() => {
     if (!patientParam) return;
     const match = clinicPatients.find(p => p.name === patientParam);
@@ -71,7 +69,6 @@ export default function ClinicPage() {
       </div>
 
       <div className="grid lg:grid-cols-[260px_1fr] gap-5">
-        {/* Patient list */}
         <div className="card overflow-hidden">
           <div className="p-3.5 border-b border-h-border">
             <div className="relative">
@@ -105,10 +102,8 @@ export default function ClinicPage() {
           </div>
         </div>
 
-        {/* Patient detail */}
         {selected && (
           <div className="space-y-4">
-            {/* Header */}
             <div className="card p-5">
               <div className="flex items-start justify-between flex-wrap gap-3">
                 <div className="flex items-center gap-3">
@@ -149,7 +144,6 @@ export default function ClinicPage() {
               </div>
             ) : (
               <>
-                {/* History */}
                 <div className="card p-5">
                   <h4 className="section-title">Medical history</h4>
                   <div className="space-y-2.5">
@@ -168,7 +162,6 @@ export default function ClinicPage() {
                   </div>
                 </div>
 
-                {/* Prescriptions */}
                 {patientRx.length > 0 && (
                   <div className="card p-5">
                     <h4 className="section-title">Prescriptions</h4>
@@ -193,7 +186,6 @@ export default function ClinicPage() {
         )}
       </div>
 
-      {/* New entry modal */}
       <Modal open={modal} onClose={() => setModal(false)} title={isNurse ? 'Record vitals' : 'New clinical entry'}>
         <div className="space-y-4">
           <div>

@@ -15,6 +15,7 @@ export const medicalHistory = [
   { id:'M1', patient:'Uwase Diane',        type:'Diagnosis',  detail:'Hypertension — Stage 1',                institution:'King Faisal Hospital',   date:'2026-06-29', doctor:'Dr. Mugisha Eric',  icdCode:'I10' },
   { id:'M2', patient:'Uwase Diane',        type:'Lab Result', detail:'Fasting glucose: 5.4 mmol/L (normal)',  institution:'King Faisal Hospital',   date:'2026-06-29', doctor:'Dr. Mugisha Eric',  icdCode:'' },
   { id:'M3', patient:'Uwase Diane',        type:'Vitals',     detail:'BP 138/89 · HR 76 bpm · Temp 36.7°C',   institution:'King Faisal Hospital',   date:'2026-06-29', doctor:'Nurse Keza Aline',  icdCode:'' },
+  { id:'M8', patient:'Uwase Diane',        type:'Diagnosis',  detail:'Seasonal flu',                           institution:'Legacy Clinic — Remera', date:'2026-01-20', doctor:'Dr. Habimana J.',   icdCode:'J11' },
   { id:'M4', patient:'Habimana Jean',      type:'Diagnosis',  detail:'Seasonal allergic rhinitis',             institution:'Legacy Clinic — Remera', date:'2026-02-03', doctor:'Dr. Habimana J.',   icdCode:'J30.1' },
   { id:'M5', patient:'Mukandayisenga A.',  type:'Diagnosis',  detail:'Type 2 Diabetes Mellitus',               institution:'King Faisal Hospital',   date:'2026-06-27', doctor:'Dr. Mugisha Eric',  icdCode:'E11' },
   { id:'M6', patient:'Mukandayisenga A.',  type:'Lab Result', detail:'HbA1c: 7.2% (elevated)',                 institution:'King Faisal Hospital',   date:'2026-06-27', doctor:'Dr. Mugisha Eric',  icdCode:'' },
@@ -74,10 +75,7 @@ export const serviceHealth = [
 ];
 
 // ── Notifications ─────────────────────────────────────────────────────────
-// Each entry carries the role it's meant for — notifications are per-user
-// data just like medical history, so they're filtered by role before display
-// (see NotificationsPage / Header) rather than shown to everyone regardless
-// of who's signed in.
+// Filtered by role before display, same as medical history is by patient.
 export const notifications = [
   { id:'N1', role:'PATIENT',         title:'New prescription issued',    body:'Amlodipine 5mg prescribed for Uwase Diane',      time:'14:41', read:false, type:'prescription' },
   { id:'N2', role:'PATIENT',         title:'Consent revoked',            body:'Uwase Diane revoked access for Legacy Clinic',   time:'13:20', read:false, type:'consent' },

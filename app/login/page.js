@@ -54,21 +54,14 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex bg-h-bg">
-      {/* Left panel — branding, now backed by a real photo instead of an
-          illustration. It's a deliberate dark hero regardless of site theme
-          (like login/marketing splashes commonly are), so text here stays
-          light/white on purpose rather than following h-text. */}
+      {/* Deliberate dark hero regardless of site theme — text stays white on purpose. */}
       <div className="hidden lg:flex lg:w-[52%] xl:w-[58%] relative overflow-hidden flex-col justify-between p-12">
         <div
           className="absolute inset-0 bg-cover bg-center scale-105"
           style={{ backgroundImage: "url('/login-hero.jpg')", filter: 'blur(1.5px) brightness(0.85)' }}
         />
-        {/* Overlay — guarantees text contrast regardless of what's under it,
-            and ties the photo back into the brand's blue rather than leaving
-            it neutral black. */}
         <div className="absolute inset-0 bg-gradient-to-br from-black/75 via-black/55 to-[#0A1A28]/80" />
 
-        {/* Logo top */}
         <div className="relative flex items-center gap-3">
           <div className="w-10 h-10 rounded-2xl bg-h-blue flex items-center justify-center shadow-lg">
             <Cross className="w-5 h-5 text-white" strokeWidth={3} />
@@ -79,7 +72,6 @@ export default function LoginPage() {
           </div>
         </div>
 
-        {/* Center content */}
         <div className="relative">
           <div className="flex items-center gap-2 mb-6">
             <Heart className="w-5 h-5 text-h-red" fill="currentColor" />
@@ -93,7 +85,6 @@ export default function LoginPage() {
             clinics, hospitals, pharmacies and insurance providers across Kigali, Rwanda.
           </p>
 
-          {/* Feature pills */}
           <div className="flex flex-wrap gap-2 mt-8">
             {['Consent-First','RBAC Security','Real-Time Events','Full Audit Trail'].map(f => (
               <span key={f} className="px-3 py-1.5 rounded-full text-xs font-semibold text-white/80 bg-white/10 border border-white/15">
@@ -103,22 +94,14 @@ export default function LoginPage() {
           </div>
         </div>
 
-        {/* Bottom */}
         <p className="text-white/40 text-xs relative">
           © 2026 Kigali Unified Patient Records & Insurance Network<br />
           ALU Enterprise Systems Project · BSc. Software Engineering
         </p>
       </div>
 
-      {/* Right panel — login form */}
       <div className="flex-1 relative flex flex-col items-center justify-center p-6 md:p-10 overflow-hidden">
-        {/* Same photo as the left panel, but heavily blurred into a soft
-            ambient backdrop rather than a legible image. The source photo is
-            inherently dark, so light mode needs it lifted a lot brighter and
-            the wash lightened — otherwise the wash (near-white at high
-            opacity) just crushes the dark image to a flat, textureless
-            color instead of a soft tint. Dark mode's wash is already close
-            in tone to the photo, so it doesn't need this compensation. */}
+        {/* Light mode needs the photo lifted brighter — otherwise a light wash on a dark photo just goes flat. */}
         <div
           className="absolute inset-0 bg-cover bg-center scale-110"
           style={{
@@ -131,7 +114,6 @@ export default function LoginPage() {
         <div className="absolute top-4 right-4 md:top-6 md:right-6">
           <ThemeToggle />
         </div>
-        {/* Mobile logo */}
         <div className="relative lg:hidden flex items-center gap-2.5 mb-8">
           <div className="w-9 h-9 rounded-xl bg-h-blue flex items-center justify-center">
             <Cross className="w-4.5 h-4.5 text-white" strokeWidth={3} />
@@ -145,7 +127,6 @@ export default function LoginPage() {
             <p className="text-sm text-h-text-muted">Access your KUPRIN dashboard</p>
           </div>
 
-          {/* Error */}
           {error && (
             <div className="flex items-start gap-2 px-3.5 py-3 bg-h-red-light border border-h-red/20 rounded-xl text-h-red text-sm mb-4 animate-fade-in">
               <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
@@ -153,7 +134,6 @@ export default function LoginPage() {
             </div>
           )}
 
-          {/* Form */}
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
               <label className="block text-xs font-semibold text-h-text mb-1.5" htmlFor="email">Email address</label>
@@ -190,7 +170,6 @@ export default function LoginPage() {
             </button>
           </form>
 
-          {/* Demo accounts */}
           <div className="mt-7">
             <div className="flex items-center gap-3 mb-4">
               <div className="flex-1 h-px bg-h-border" />
@@ -209,12 +188,12 @@ export default function LoginPage() {
                     disabled={!!demoLoading}
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-medium transition-all duration-200 disabled:opacity-50"
                     style={{
-                      borderColor: demoLoading === demo.userId ? accent : '#E6DFD2',
-                      color: demoLoading === demo.userId ? accent : '#756B5E',
+                      borderColor: demoLoading === demo.userId ? accent : 'rgb(var(--color-h-border))',
+                      color: demoLoading === demo.userId ? accent : 'rgb(var(--color-h-text-muted))',
                       backgroundColor: demoLoading === demo.userId ? `${accent}0F` : 'transparent',
                     }}
                     onMouseEnter={e => { e.currentTarget.style.borderColor = accent; e.currentTarget.style.color = accent; e.currentTarget.style.backgroundColor = `${accent}0F`; }}
-                    onMouseLeave={e => { if (demoLoading !== demo.userId) { e.currentTarget.style.borderColor = '#E6DFD2'; e.currentTarget.style.color = '#756B5E'; e.currentTarget.style.backgroundColor = 'transparent'; }}}
+                    onMouseLeave={e => { if (demoLoading !== demo.userId) { e.currentTarget.style.borderColor = 'rgb(var(--color-h-border))'; e.currentTarget.style.color = 'rgb(var(--color-h-text-muted))'; e.currentTarget.style.backgroundColor = 'transparent'; }}}
                   >
                     {demoLoading === demo.userId && (
                       <div className="w-3 h-3 border border-current border-t-transparent rounded-full animate-spin" />

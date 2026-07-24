@@ -4,9 +4,7 @@
 @tailwind utilities;
 
 @layer base {
-  /* Color tokens as "R G B" triplets so Tailwind's opacity modifiers
-     (bg-h-blue/15 etc.) keep working. Every h-* utility class reads these —
-     toggling the .dark class on <html> re-themes the whole app for free. */
+  /* "R G B" triplets so Tailwind opacity modifiers (bg-h-blue/15) still work. */
   :root {
     --color-h-blue: 90 138 166;
     --color-h-blue-dark: 62 107 138;
@@ -25,10 +23,10 @@
     --color-h-purple-light: 243 239 248;
     --color-h-bg: 247 244 238;
     --color-h-surface: 255 255 255;
-    --color-h-border: 230 223 210;
+    --color-h-border: 70 63 52;
     --color-h-text: 42 38 33;
-    --color-h-text-muted: 117 107 94;
-    --color-h-text-light: 166 154 137;
+    --color-h-text-muted: 88 80 68;
+    --color-h-text-light: 105 96 80;
     --shadow-color: 42 38 33;
   }
 
@@ -59,10 +57,7 @@
 
   html { font-family: 'Inter', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
   body { @apply bg-h-bg text-h-text transition-colors duration-200; }
-  /* Visible keyboard focus everywhere — mouse users see nothing extra.
-     :where() keeps this at near-zero specificity so any element's own
-     focus treatment (e.g. .input-field's ring) still wins outright,
-     instead of fighting it or overriding its border-radius. */
+  /* :where() keeps specificity low so element-specific focus styles still win. */
   :where(a, button, input, select, textarea, [tabindex]):focus-visible {
     outline: 2px solid rgb(var(--color-h-blue));
     outline-offset: 2px;

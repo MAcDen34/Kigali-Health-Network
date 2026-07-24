@@ -6,9 +6,7 @@ import KPICard from '@/components/ui/KPICard';
 import { Building2, KeyRound, CheckCircle2, AlertCircle, Activity, Plus } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
-// Service names are two-ish words each ("Records & Consent", "Clinical
-// Service"...) — wrapping onto two stacked horizontal lines reads far better
-// than the default single oblique line, especially with 6 bars in a row.
+// Wraps long service names onto two lines instead of an angled label.
 function ServiceNameTick({ x, y, payload }) {
   const words = payload.value.split(' ');
   let line1 = payload.value;
@@ -44,7 +42,6 @@ export default function AdminPage() {
         <KPICard title="Audit events"    value={platformAudit.length}   icon="Shield"     color="purple" />
       </div>
 
-      {/* Service latency — always visible, not tucked behind a tab */}
       <div className="card p-5">
         <h3 className="section-title">Service latency</h3>
         <div className="h-48">
@@ -70,7 +67,6 @@ export default function AdminPage() {
         </div>
       </div>
 
-      {/* Tabs */}
       <div className="card overflow-hidden">
         <div className="flex border-b border-h-border px-5">
           {[['institutions','Institutions'],['health','Service Health'],['audit','Platform Audit']].map(([k,l]) => (

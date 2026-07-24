@@ -10,8 +10,7 @@ import {
   Activity, Heart, Cross, Building2,
 } from 'lucide-react';
 
-// Notifications is deliberately not a sidebar item — it's reached solely via
-// the header bell, so unread state has exactly one home instead of two.
+// Notifications is reached via the header bell only, not listed here.
 const ALL_NAV = [
   { key:'dashboard', href:'/dashboard',    label:'Dashboard',       icon:LayoutDashboard },
   { key:'records',   href:'/records',      label:'My Records',      icon:ShieldCheck },
@@ -66,7 +65,6 @@ export default function Sidebar() {
       <aside className={`fixed top-0 left-0 h-screen z-40 flex flex-col transition-all duration-300 ease-in-out border-r border-h-border bg-h-surface print:hidden
         ${sidebarCollapsed ? 'w-[70px] -translate-x-full lg:translate-x-0' : 'w-[256px] translate-x-0'}`}
       >
-        {/* Logo */}
         <div className="flex items-center h-[68px] px-4 border-b border-h-border flex-shrink-0">
           {!sidebarCollapsed ? (
             <div className="flex items-center gap-3">
@@ -86,7 +84,6 @@ export default function Sidebar() {
           )}
         </div>
 
-        {/* Role badge */}
         {!sidebarCollapsed && (
           <div className="mx-3 mt-3 mb-1 px-3 py-2 rounded-xl" style={{ backgroundColor: `${accent}14` }}>
             <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: accent }}>Signed in as</p>
@@ -95,12 +92,10 @@ export default function Sidebar() {
           </div>
         )}
 
-        {/* Nav */}
         <nav className="flex-1 overflow-y-auto py-3 px-3 scrollbar-thin space-y-0.5">
           {navItems.map(item => <NavLink key={item.key} item={item} />)}
         </nav>
 
-        {/* User — click to switch accounts */}
         <div className="border-t border-h-border p-3 flex-shrink-0">
           {!sidebarCollapsed && (
             <div className="relative mb-2">
@@ -158,7 +153,6 @@ export default function Sidebar() {
           </button>
         </div>
 
-        {/* Collapse toggle */}
         <button
           onClick={() => dispatch({ type:'TOGGLE_SIDEBAR' })}
           className="hidden lg:flex absolute -right-3 top-[68px] mt-4 w-6 h-6 rounded-full items-center justify-center text-h-text-muted hover:text-h-text transition-colors border border-h-border bg-h-surface shadow-sm"

@@ -21,8 +21,7 @@ export default function InsurancePage() {
   const [highlightClaimId, setHighlightClaimId] = useState(null);
   const searchParams = useSearchParams();
 
-  // Deep-linked from header search — make sure the status filter isn't
-  // hiding the row, then scroll to and flash the exact claim.
+  // Deep-linked from header search: clear filter, scroll into view, flash.
   useEffect(() => {
     const claimId = searchParams.get('claim');
     if (!claimId) return;
@@ -44,8 +43,6 @@ export default function InsurancePage() {
   const paid = claims.filter(c => c.status === 'paid').length;
   const totalPending = claims.filter(c => c.status === 'pending').reduce((s,c) => s + c.amount, 0);
 
-  // Value by status — the table is a lot of rows to scan for "where's the
-  // money," this answers it at a glance.
   const chartData = Object.keys(STATUS).map(key => ({
     key,
     label: STATUS[key].label,
@@ -61,13 +58,11 @@ export default function InsurancePage() {
         <KPICard title="Pending value"   value={`RWF ${(totalPending/1000).toFixed(0)}K`} icon="Banknote" color="blue" />
       </div>
 
-      {/* Info banner */}
       <div className="rounded-xl border border-h-purple/20 bg-h-purple-light px-4 py-3 text-xs text-h-purple font-medium flex items-center gap-2">
         <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
         Billing-relevant data only — no clinical notes or personal details exposed to insurance agents.
       </div>
 
-      {/* Claim value by status */}
       <div className="card p-5">
         <h3 className="section-title">Claim value by status</h3>
         <div className="h-56">
@@ -92,7 +87,6 @@ export default function InsurancePage() {
       </div>
 
       <div className="card p-5">
-        {/* Filter tabs */}
         <div className="flex items-center gap-2 mb-5 flex-wrap">
           <Filter className="w-4 h-4 text-h-text-muted" />
           {['all','pending','approved','paid','rejected'].map(f => (
@@ -104,7 +98,6 @@ export default function InsurancePage() {
           <span className="ml-auto text-xs text-h-text-muted">{list.length} claims</span>
         </div>
 
-        {/* Table */}
         <div className="overflow-x-auto -mx-5">
           <table className="w-full text-sm min-w-[680px]">
             <thead>

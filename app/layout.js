@@ -7,9 +7,7 @@ export const metadata = {
   description: 'Permissioned, interoperable health data platform for Kigali, Rwanda',
 };
 
-// Runs before paint, before React hydrates — without this, the page would
-// flash light mode for a beat on every load even for someone who picked dark,
-// since AppContext can't apply the class until after it mounts.
+// Runs before paint so dark mode doesn't flash light first on load.
 const THEME_INIT_SCRIPT = `
 (function () {
   try {

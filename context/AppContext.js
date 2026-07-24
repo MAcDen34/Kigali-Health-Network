@@ -74,8 +74,7 @@ function reducer(state, action) {
       return { ...state, notifications };
     }
     case 'MARK_ALL_READ': {
-      // Scoped to the requesting role — notifications are per-user data,
-      // so "mark all read" shouldn't touch other roles' unread state.
+      // Scoped to the requesting role only.
       const notifications = state.notifications.map(n =>
         n.role === action.payload ? { ...n, read: true } : n
       );
@@ -116,8 +115,7 @@ export function AppProvider({ children }) {
     else sessionStorage.removeItem(STORAGE_KEY);
   }, [state.user, hydrated]);
 
-  // Applies at the provider level (not inside AppShell) so the theme also
-  // covers the public login page, not just logged-in views.
+  // At provider level (not AppShell) so it also covers the public login page.
   useEffect(() => {
     if (!hydrated) return;
     document.documentElement.classList.toggle('dark', state.theme === 'dark');

@@ -19,9 +19,7 @@ const PAGE_TITLES = {
   '/profile':       ['Account',          'Profile'],
 };
 
-// Scoped to whatever the signed-in role can actually see — mirrors the same
-// access boundaries AppShell enforces on routes, so search can't surface
-// data a role isn't otherwise allowed to reach.
+// Scoped to whatever the signed-in role can see, same as AppShell's route guard.
 function getSearchResults(role, state, query) {
   const q = query.trim().toLowerCase();
   if (q.length < 2) return [];
@@ -84,10 +82,7 @@ export default function Header() {
   const [bellShake, setBellShake] = useState(false);
   const prevUnread = useRef(null);
 
-  // Shakes once whenever unread count rises above where it was — covers a
-  // fresh notification arriving, and (since there's no prior render to
-  // compare against) shows a one-time nudge on first load if there's
-  // already something unread waiting.
+  // Shakes once when unread rises, including on first load if already unread.
   useEffect(() => {
     const justIncreased = prevUnread.current !== null && unread > prevUnread.current;
     const arrivedWithUnread = prevUnread.current === null && unread > 0;
@@ -113,7 +108,6 @@ export default function Header() {
   return (
     <header className="sticky top-0 z-20 bg-h-surface/90 backdrop-blur-xl border-b border-h-border">
       <div className="flex items-center justify-between h-[68px] px-4 lg:px-6">
-        {/* Left */}
         <div className="flex items-center gap-4">
           <button
             onClick={() => dispatch({ type:'TOGGLE_SIDEBAR' })}
@@ -135,9 +129,7 @@ export default function Header() {
           </div>
         </div>
 
-        {/* Right */}
         <div className="flex items-center gap-2">
-          {/* Search */}
           <div className="hidden md:block relative w-52">
             <div
               className="flex items-center gap-2 bg-h-bg border border-h-border rounded-xl px-3 py-2 transition-colors"
@@ -188,10 +180,8 @@ export default function Header() {
             )}
           </div>
 
-          {/* Theme toggle */}
           <ThemeToggle />
 
-          {/* Bell */}
           <Link
             href="/notifications"
             className="relative p-2.5 rounded-xl hover:bg-h-bg transition-colors"
@@ -204,7 +194,6 @@ export default function Header() {
             )}
           </Link>
 
-          {/* User chip — links to profile */}
           <Link
             href="/profile"
             className="hidden sm:flex items-center gap-2.5 pl-3 ml-1 border-l border-h-border rounded-r-xl pr-2 py-1.5 hover:bg-h-bg transition-colors"

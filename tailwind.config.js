@@ -1,10 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 
-// Every h-* color reads from a CSS variable (defined in globals.css as an
-// "R G B" triplet, once for :root and once for .dark) instead of a fixed hex.
-// That's what makes dark mode work by just toggling a class on <html> —
-// every existing bg-h-*/text-h-*/border-h-* utility in every component
-// already repaints itself; nothing else has to change.
+// Reads colors from CSS variables (see globals.css) so toggling .dark re-themes everything.
 function withOpacity(varName) {
   return ({ opacityValue }) =>
     opacityValue === undefined
@@ -29,32 +25,21 @@ module.exports = {
       width: { '4.5': '1.125rem' },
       height: { '4.5': '1.125rem' },
       colors: {
-        // Primary — soft dusty blue. Lighter/calmer than a saturated brand blue,
-        // still reads as clinical/trustworthy.
         'h-blue':        withOpacity('--color-h-blue'),
         'h-blue-dark':   withOpacity('--color-h-blue-dark'),
         'h-blue-light':  withOpacity('--color-h-blue-light'),
-        // Health / consent / vitality — soft sage teal.
         'h-teal':        withOpacity('--color-h-teal'),
         'h-teal-dark':   withOpacity('--color-h-teal-dark'),
         'h-teal-light':  withOpacity('--color-h-teal-light'),
-        // Success — soft sage green, distinct hue from teal.
         'h-green':       withOpacity('--color-h-green'),
         'h-green-dark':  withOpacity('--color-h-green-dark'),
         'h-green-light': withOpacity('--color-h-green-light'),
-        // Caution / medication — warm terracotta amber. Kept clear (not overly
-        // muted) since it flags real dosage/pending states.
         'h-amber':       withOpacity('--color-h-amber'),
         'h-amber-light': withOpacity('--color-h-amber-light'),
-        // Danger — muted brick red. Kept legible since it flags real safety
-        // issues (drug interactions, allergy conflicts) — reserved exclusively
-        // for alerts, no role/identity color reuses this hue.
         'h-red':         withOpacity('--color-h-red'),
         'h-red-light':   withOpacity('--color-h-red-light'),
-        // Info / insurance / audit — soft plum.
         'h-purple':      withOpacity('--color-h-purple'),
         'h-purple-light':withOpacity('--color-h-purple-light'),
-        // Neutrals — warm linen/paper (light) or warm charcoal (dark).
         'h-bg':          withOpacity('--color-h-bg'),
         'h-surface':     withOpacity('--color-h-surface'),
         'h-border':      withOpacity('--color-h-border'),

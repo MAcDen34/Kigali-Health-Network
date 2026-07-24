@@ -23,9 +23,7 @@ export default function PharmacyPage() {
   const [query, setQuery] = useState(() => searchParams.get('q') || '');
   const [highlightRxId, setHighlightRxId] = useState(null);
 
-  // Deep-linked from header search — prefill the filter, then scroll to and
-  // flash the exact prescription that was searched for (matched by code,
-  // since that's what the header search links with).
+  // Deep-linked from header search (matched by code): prefill, scroll, flash.
   useEffect(() => {
     const q = searchParams.get('q');
     if (!q) return;
@@ -71,7 +69,6 @@ export default function PharmacyPage() {
         <KPICard title="Flagged"      value={flagged}              icon="AlertTriangle" color="red"   />
       </div>
 
-      {/* Queue breakdown */}
       <div className="card p-5 flex flex-col sm:flex-row items-center gap-6">
         <div className="w-36 h-36 flex-shrink-0">
           <ResponsiveContainer width="100%" height="100%">
@@ -87,10 +84,7 @@ export default function PharmacyPage() {
               </Pie>
             </PieChart>
           </ResponsiveContainer>
-          {/* Custom tooltip — recharts' built-in Pie tooltip snaps to a fixed
-              anchor per slice instead of following the cursor, which read as
-              laggy/jumpy. This tracks the real cursor position instead and
-              sits just to its right, with no fade/pop animation. */}
+          {/* Custom tooltip: recharts' Pie tooltip snaps per-slice instead of following the cursor. */}
           {hoveredSlice && (
             <div
               className="fixed z-50 pointer-events-none px-3 py-2 rounded-xl border border-h-border bg-h-surface shadow-modal"
@@ -115,7 +109,6 @@ export default function PharmacyPage() {
       </div>
 
       <div className="card p-5">
-        {/* Search + filter bar */}
         <div className="flex flex-col sm:flex-row gap-3 mb-5">
           <div className="relative flex-1">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-h-text-light" />
@@ -139,7 +132,6 @@ export default function PharmacyPage() {
           </div>
         </div>
 
-        {/* Prescription list */}
         <div className="space-y-2.5">
           {list.map(rx => (
             <div key={rx.id} id={`rx-row-${rx.id}`}

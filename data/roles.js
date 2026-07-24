@@ -7,7 +7,7 @@ export const ROLES = {
   INSURANCE_AGENT:   'Insurance Agent',
 };
 
-// Nav access per role (notifications is reached via the header bell, not a sidebar entry)
+// Notifications is reached via the header bell, not listed here.
 export const ROLE_NAV = {
   PLATFORM_ADMIN:  ['dashboard','admin','audit'],
   PATIENT:         ['dashboard','records'],
@@ -17,22 +17,17 @@ export const ROLE_NAV = {
   INSURANCE_AGENT: ['dashboard','insurance'],
 };
 
-// Routes every signed-in role may reach regardless of ROLE_NAV — these are
-// account-level pages (not domain nav items), reached only via the header.
+// Account-level pages every role may reach regardless of ROLE_NAV.
 export const ALWAYS_ALLOWED_ROUTES = ['dashboard', 'profile', 'notifications'];
 
-// Accent colour per role (used for sidebar active state).
-// Each role reuses the same hue as its domain's badge/KPI color elsewhere
-// in the app, so the identity color always means the same thing everywhere.
-// Red is intentionally excluded — it's reserved for danger/alert states only,
-// so no role ever looks like it's permanently "in error".
+// Red excluded on purpose — reserved for danger/alert states, not identity.
 export const ROLE_ACCENT = {
-  PLATFORM_ADMIN:  '#5B4E8C', // deep plum — authority, distinct from every semantic tone
-  PATIENT:         '#358573', // teal (dark variant) — health/consent
-  DOCTOR:          '#3E6B8A', // blue (dark variant) — clinical/trust
-  NURSE:           '#5A9B5C', // green (dark variant) — care/vitality
-  PHARMACIST:      '#CC8A38', // amber — medication
-  INSURANCE_AGENT: '#7D5BA6', // purple — billing/admin
+  PLATFORM_ADMIN:  '#5B4E8C',
+  PATIENT:         '#358573',
+  DOCTOR:          '#3E6B8A',
+  NURSE:           '#5A9B5C',
+  PHARMACIST:      '#CC8A38',
+  INSURANCE_AGENT: '#7D5BA6',
 };
 
 export const DEMO_USERS = [

@@ -24,31 +24,20 @@ export default function AppShell({ children }) {
       router.replace('/login');
       return;
     }
-    // Sidebar links are already filtered per role, but that only hides the
-    // link — it doesn't stop someone typing the URL directly (or switching
-    // accounts and landing on a page the new role can't see). Enforce it here.
+    // Sidebar only hides the link — this actually enforces it.
     if (!isPublic && user && !hasRouteAccess) {
       router.replace('/dashboard');
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hydrated, user, pathname]);
 
-  // Show nothing while hydrating on protected pages
   if (!hydrated && !isPublic) return null;
-
-  // Public pages render without shell
   if (isPublic || !user) return <>{children}</>;
-
-  // Don't flash disallowed content while the redirect above is in flight
   if (!hasRouteAccess) return null;
 
   return (
     <div className="flex h-screen overflow-hidden">
-      {/* Same photo as the login page, same theme-aware treatment — the
-          sidebar and header sit opaque/frosted on top, cards stay solid;
-          this only shows through the gaps around them. -z-10 (rather than
-          the relative-on-every-sibling trick used on the login page) keeps
-          it reliably behind everything without touching Sidebar/Header/main. */}
+      {/* Same photo/treatment as the login page. -z-10 keeps it behind Sidebar/Header/main. */}
       <div
         className="fixed inset-0 -z-10 bg-cover bg-center scale-110"
         style={{
