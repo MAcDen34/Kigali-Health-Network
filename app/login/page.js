@@ -70,7 +70,7 @@ export default function LoginPage() {
           </div>
           <div>
             <p className="text-white font-bold text-lg leading-tight">Kigali Health Network</p>
-            <p className="text-white/40 text-xs">KUNRN — Unified Patient Records</p>
+            <p className="text-white/40 text-xs">KUPRIN — Unified Patient Records</p>
           </div>
         </div>
 
@@ -118,7 +118,7 @@ export default function LoginPage() {
         <div className="w-full max-w-[380px]">
           <div className="mb-7">
             <h1 className="text-2xl font-bold text-h-text mb-1">Sign in</h1>
-            <p className="text-sm text-h-text-muted">Access your KUNRN dashboard</p>
+            <p className="text-sm text-h-text-muted">Access your KUPRIN dashboard</p>
           </div>
 
           {/* Error */}
@@ -136,7 +136,7 @@ export default function LoginPage() {
               <div className="relative">
                 <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-h-text-light" />
                 <input id="email" type="email" autoComplete="email"
-                  placeholder="you@kunrn.rw"
+                  placeholder="you@kuprin.rw"
                   value={email} onChange={e => setEmail(e.target.value)}
                   className="input-field pl-10"
                 />

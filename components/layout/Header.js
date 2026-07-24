@@ -39,7 +39,7 @@ export default function Header() {
           </button>
           <div>
             <div className="flex items-center gap-1.5 text-[11px] text-h-text-light mb-0.5">
-              <span>KUNRN</span>
+              <span>KUPRIN</span>
               <ChevronRight className="w-3 h-3" />
               <span>{section}</span>
               {title !== section && <>

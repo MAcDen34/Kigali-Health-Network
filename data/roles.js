@@ -28,10 +28,10 @@ export const ROLE_ACCENT = {
 };
 
 export const DEMO_USERS = [
-  { id:'USR001', name:'Platform Admin',       email:'admin@kunrn.rw',      password:'admin123',     role:'PLATFORM_ADMIN',  avatar:'PA', institution:'KUNRN Platform' },
-  { id:'USR002', name:'Uwase Diane',           email:'patient@kunrn.rw',    password:'patient123',   role:'PATIENT',         avatar:'UD', institution:null },
-  { id:'USR003', name:'Dr. Mugisha Eric',      email:'doctor@kunrn.rw',     password:'doctor123',    role:'DOCTOR',          avatar:'ME', institution:'King Faisal Hospital' },
-  { id:'USR004', name:'Nurse Keza Aline',      email:'nurse@kunrn.rw',      password:'nurse123',     role:'NURSE',           avatar:'KA', institution:'King Faisal Hospital' },
-  { id:'USR005', name:'Niyonsenga Patrick',    email:'pharm@kunrn.rw',      password:'pharm123',     role:'PHARMACIST',      avatar:'NP', institution:'Kigali Pharmacy — Kimironko' },
-  { id:'USR006', name:'Mukamana Sandrine',     email:'insurance@kunrn.rw',  password:'ins123',       role:'INSURANCE_AGENT', avatar:'MS', institution:'RSSB / Mutuelle de Santé' },
+  { id:'USR001', name:'Platform Admin',       email:'admin@kuprin.rw',      password:'admin123',     role:'PLATFORM_ADMIN',  avatar:'PA', institution:'KUPRIN Platform' },
+  { id:'USR002', name:'Uwase Diane',           email:'patient@kuprin.rw',    password:'patient123',   role:'PATIENT',         avatar:'UD', institution:null },
+  { id:'USR003', name:'Dr. Mugisha Eric',      email:'doctor@kuprin.rw',     password:'doctor123',    role:'DOCTOR',          avatar:'ME', institution:'King Faisal Hospital' },
+  { id:'USR004', name:'Nurse Keza Aline',      email:'nurse@kuprin.rw',      password:'nurse123',     role:'NURSE',           avatar:'KA', institution:'King Faisal Hospital' },
+  { id:'USR005', name:'Niyonsenga Patrick',    email:'pharm@kuprin.rw',      password:'pharm123',     role:'PHARMACIST',      avatar:'NP', institution:'Kigali Pharmacy — Kimironko' },
+  { id:'USR006', name:'Mukamana Sandrine',     email:'insurance@kuprin.rw',  password:'ins123',       role:'INSURANCE_AGENT', avatar:'MS', institution:'RSSB / Mutuelle de Santé' },
 ];

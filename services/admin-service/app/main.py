@@ -5,7 +5,7 @@ from .routers import institutions, staff, audit, auth
 
 app = FastAPI(
     title="Admin & Platform Service",
-    description="Institution onboarding, staff management, API tokens, and platform audit for KUNRN.",
+    description="Institution onboarding, staff management, API tokens, and platform audit for KUPRIN.",
     version="1.0.0",
 )
 

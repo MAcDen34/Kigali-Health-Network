@@ -74,7 +74,7 @@ export default function Sidebar() {
               </div>
               <div className="min-w-0">
                 <p className="text-white font-bold text-sm leading-tight">Kigali Health</p>
-                <p className="text-white/35 text-[10px] leading-tight mt-0.5">Unified Network · KUNRN</p>
+                <p className="text-white/35 text-[10px] leading-tight mt-0.5">Unified Network · KUPRIN</p>
               </div>
             </div>
           ) : (

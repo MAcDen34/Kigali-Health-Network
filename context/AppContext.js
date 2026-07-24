@@ -1,6 +1,7 @@
 'use client';
 import { createContext, useContext, useReducer, useEffect, useState } from 'react';
 import { DEMO_USERS } from '@/data/roles';
+import { clearToken } from '@/lib/api';
 import {
   consentGrants, medicalHistory, prescriptions, claims,
   institutions, notifications, platformAudit, serviceHealth,
@@ -8,7 +9,7 @@ import {
 } from '@/data/mockData';
 
 const AppContext = createContext(null);
-const STORAGE_KEY = 'kunrn_session';
+const STORAGE_KEY = 'kuprin_session';
 
 const initialState = {
   user: null,
@@ -97,8 +98,12 @@ export function AppProvider({ children }) {
 
   useEffect(() => {
     if (!hydrated) return;
-    if (state.user) sessionStorage.setItem(STORAGE_KEY, JSON.stringify(state.user));
-    else sessionStorage.removeItem(STORAGE_KEY);
+    if (state.user) {
+      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(state.user));
+    } else {
+      sessionStorage.removeItem(STORAGE_KEY);
+      clearToken(); // demo logins never set one, but this is a safe no-op either way
+    }
   }, [state.user, hydrated]);
 
   return (
