@@ -14,10 +14,9 @@ redis_client = redis.from_url(REDIS_URL, decode_responses=True)
 SessionLocal = sessionmaker(bind=engine)
 
 
-def ensure_group():
-    """Create the consumer group once. Safe to call every startup."""
+def ensure_group(stream_name=STREAM_NAME, group_name=GROUP_NAME):
     try:
-        redis_client.xgroup_create(STREAM_NAME, GROUP_NAME, id="0", mkstream=True)
+        redis_client.xgroup_create(stream_name, group_name, id="0", mkstream=True)
     except redis.exceptions.ResponseError as e:
         if "BUSYGROUP" not in str(e):
             raise
@@ -38,21 +37,29 @@ def process_message(fields: dict):
         db.close()
 
 
+def poll_once(count=1, block_ms=1000, stream_name=STREAM_NAME, group_name=GROUP_NAME, consumer_name=CONSUMER_NAME):
+    response = redis_client.xreadgroup(
+        group_name, consumer_name,
+        {stream_name: ">"},
+        count=count, block=block_ms
+    )
+    if not response:
+        return 0
+
+    processed = 0
+    for _stream, messages in response:
+        for message_id, fields in messages:
+            process_message(fields)
+            redis_client.xack(stream_name, group_name, message_id)
+            processed += 1
+    return processed
+
+
 def consume_loop():
     ensure_group()
     while True:
         try:
-            response = redis_client.xreadgroup(
-                GROUP_NAME, CONSUMER_NAME,
-                {STREAM_NAME: ">"},
-                count=1, block=5000
-            )
-            if not response:
-                continue
-            for _stream, messages in response:
-                for message_id, fields in messages:
-                    process_message(fields)
-                    redis_client.xack(STREAM_NAME, GROUP_NAME, message_id)
+            poll_once(count=1, block_ms=5000)
         except Exception as e:
             print(f"[notification-consumer] error: {e}")
 
