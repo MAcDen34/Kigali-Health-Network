@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 from uuid import UUID
 from datetime import datetime
+from typing import Optional
 
 class ReminderOut(BaseModel):
     id: UUID
@@ -8,6 +9,10 @@ class ReminderOut(BaseModel):
     prescription_id: UUID
     drug_code: str
     dosage: str
+    interval_hours: int
+    next_due_at: datetime
+    last_notified_at: Optional[datetime] = None
+    notified_count: int
     acknowledged: bool
     created_at: datetime
     class Config:

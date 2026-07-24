@@ -1,9 +1,11 @@
 import os
 import threading
+from datetime import datetime, timedelta, timezone
 import redis
 from sqlalchemy.orm import sessionmaker
 from .database import engine
 from . import models
+from .scheduling import parse_interval_hours
 
 REDIS_URL     = os.getenv("REDIS_URL", "redis://localhost:6379")
 STREAM_NAME   = "prescription_events"
@@ -25,11 +27,14 @@ def ensure_group(stream_name=STREAM_NAME, group_name=GROUP_NAME):
 def process_message(fields: dict):
     db = SessionLocal()
     try:
+        interval_hours = parse_interval_hours(fields["dosage"])
         reminder = models.Reminder(
             patient_id=fields["patient_id"],
             prescription_id=fields["prescription_id"],
             drug_code=fields["drug_code"],
             dosage=fields["dosage"],
+            interval_hours=interval_hours,
+            next_due_at=datetime.now(timezone.utc) + timedelta(hours=interval_hours),
         )
         db.add(reminder)
         db.commit()
