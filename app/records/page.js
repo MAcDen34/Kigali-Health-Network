@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
 import Badge from '@/components/ui/Badge';
 import KPICard from '@/components/ui/KPICard';
-import { ShieldCheck, ShieldOff, Clock3, FileText, AlertTriangle, Activity, CheckCircle2 } from 'lucide-react';
+import { ShieldCheck, ShieldOff, Clock3, FileText, AlertTriangle, Activity, CheckCircle2, AlertCircle } from 'lucide-react';
 import { getPatient } from '@/lib/api';
 
 const TYPE_TONE = { Diagnosis:'blue', 'Lab Result':'teal', Vitals:'green', Prescription:'purple' };
@@ -26,7 +26,8 @@ export default function RecordsPage() {
       });
   }, []);
 
-  const { patientProfile, consents, medicalHistory, auditLog } = state;
+  const { patientProfile, consents, medicalHistory: allHistory, auditLog } = state;
+  const medicalHistory = allHistory.filter(m => m.patient === patientProfile.name);
   const [tab, setTab] = useState('history');
   const active = consents.filter(c => c.status === 'active').length;
 
@@ -45,8 +46,29 @@ export default function RecordsPage() {
       <div className="grid lg:grid-cols-3 gap-5">
         {/* Profile card */}
         <div className="card p-5 lg:col-span-1 h-fit">
-          {loading && <p className="text-sm text-h-text-muted">Loading patient...</p>}
-          {error && <p className="text-sm text-red-500">Error: {error}</p>}
+          {loading && (
+            <div className="space-y-4 animate-pulse">
+              <div className="flex items-center gap-3 pb-4 border-b border-h-border">
+                <div className="w-12 h-12 rounded-2xl animate-shimmer" />
+                <div className="flex-1 space-y-2">
+                  <div className="h-3.5 w-32 rounded animate-shimmer" />
+                  <div className="h-3 w-24 rounded animate-shimmer" />
+                </div>
+              </div>
+              <div className="space-y-3">
+                <div className="h-3.5 w-full rounded animate-shimmer" />
+                <div className="h-3.5 w-full rounded animate-shimmer" />
+                <div className="h-3.5 w-2/3 rounded animate-shimmer" />
+              </div>
+            </div>
+          )}
+          {error && (
+            <div className="text-center py-6">
+              <AlertCircle className="w-8 h-8 text-h-red mx-auto mb-3" />
+              <p className="text-sm font-semibold text-h-text mb-1">Couldn&rsquo;t load patient data</p>
+              <p className="text-xs text-h-text-muted">{error}</p>
+            </div>
+          )}
           {(!loading && !error && realPatient) && (
             <>
               <div className="flex items-center gap-3 mb-4 pb-4 border-b border-h-border">
