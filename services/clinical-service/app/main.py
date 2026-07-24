@@ -5,7 +5,7 @@ from .routers import diagnoses, vitals, prescriptions
 
 app = FastAPI(
     title="Clinical Service",
-    description="Diagnosis entry, vitals recording, treatment plans, and prescription creation for KUPRIN.",
+    description="Diagnosis entry, vitals recording, treatment plans, and prescription creation for KUNRN.",
     version="1.0.0",
 )
 

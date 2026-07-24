@@ -1,0 +1,97 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /* "R G B" triplets so Tailwind opacity modifiers (bg-h-blue/15) still work. */
+  :root {
+    --color-h-blue: 90 138 166;
+    --color-h-blue-dark: 62 107 138;
+    --color-h-blue-light: 234 242 246;
+    --color-h-teal: 79 163 145;
+    --color-h-teal-dark: 53 133 115;
+    --color-h-teal-light: 233 245 242;
+    --color-h-green: 116 173 118;
+    --color-h-green-dark: 90 155 92;
+    --color-h-green-light: 240 247 238;
+    --color-h-amber: 204 138 56;
+    --color-h-amber-light: 251 241 227;
+    --color-h-red: 188 83 71;
+    --color-h-red-light: 252 238 236;
+    --color-h-purple: 149 117 184;
+    --color-h-purple-light: 243 239 248;
+    --color-h-bg: 247 244 238;
+    --color-h-surface: 255 255 255;
+    --color-h-border: 70 63 52;
+    --color-h-text: 42 38 33;
+    --color-h-text-muted: 88 80 68;
+    --color-h-text-light: 105 96 80;
+    --shadow-color: 42 38 33;
+  }
+
+  .dark {
+    --color-h-blue: 130 175 201;
+    --color-h-blue-dark: 158 194 216;
+    --color-h-blue-light: 34 52 64;
+    --color-h-teal: 111 195 176;
+    --color-h-teal-dark: 138 210 193;
+    --color-h-teal-light: 30 56 51;
+    --color-h-green: 143 199 145;
+    --color-h-green-dark: 166 214 168;
+    --color-h-green-light: 37 59 38;
+    --color-h-amber: 224 162 90;
+    --color-h-amber-light: 61 46 24;
+    --color-h-red: 217 119 107;
+    --color-h-red-light: 61 33 29;
+    --color-h-purple: 177 153 209;
+    --color-h-purple-light: 46 39 64;
+    --color-h-bg: 28 26 23;
+    --color-h-surface: 36 33 29;
+    --color-h-border: 55 50 43;
+    --color-h-text: 242 238 230;
+    --color-h-text-muted: 176 166 149;
+    --color-h-text-light: 125 117 102;
+    --shadow-color: 0 0 0;
+  }
+
+  html { font-family: 'Inter', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+  body { @apply bg-h-bg text-h-text transition-colors duration-200; }
+  /* :where() keeps specificity low so element-specific focus styles still win. */
+  :where(a, button, input, select, textarea, [tabindex]):focus-visible {
+    outline: 2px solid rgb(var(--color-h-blue));
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  .btn-primary   { @apply inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-white bg-h-blue rounded-xl hover:bg-h-blue-dark active:scale-[0.98] transition-all shadow-btn; }
+  .btn-secondary { @apply inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-h-text bg-h-surface border border-h-border rounded-xl hover:bg-h-bg active:scale-[0.98] transition-all; }
+  .btn-danger    { @apply inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-white bg-h-red rounded-xl hover:opacity-90 active:scale-[0.98] transition-all; }
+  .btn-teal      { @apply inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-white bg-h-teal rounded-xl hover:bg-h-teal-dark active:scale-[0.98] transition-all; }
+  .card          { @apply rounded-2xl border border-h-border; }
+  .card-hover    { @apply rounded-2xl border border-h-border transition-all duration-300 hover:-translate-y-0.5; }
+  .input-field   { @apply w-full px-3 py-2.5 text-sm border border-h-border rounded-xl focus:outline-none focus:ring-2 focus:ring-h-blue/25 focus:border-h-blue transition-colors bg-h-surface text-h-text placeholder:text-h-text-light; }
+  .page-header   { @apply flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6; }
+  .page-title    { @apply text-2xl font-bold text-h-text; }
+  .page-subtitle { @apply text-sm text-h-text-muted mt-0.5; }
+  .section-title { @apply text-base font-semibold text-h-text mb-4; }
+  .tab-active    { @apply text-h-blue border-b-2 border-h-blue font-semibold; }
+  .tab-inactive  { @apply text-h-text-muted hover:text-h-text border-b-2 border-transparent transition-colors; }
+}
+
+@layer utilities {
+  .scrollbar-thin { scrollbar-width: thin; scrollbar-color: rgb(var(--color-h-border)) transparent; }
+  .scrollbar-thin::-webkit-scrollbar { width: 5px; height: 5px; }
+  .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
+  .scrollbar-thin::-webkit-scrollbar-thumb { background-color: rgb(var(--color-h-border)); border-radius: 4px; }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; } 100% { background-position: 200% 0; }
+}
+.animate-shimmer {
+  background: linear-gradient(90deg, rgb(var(--color-h-bg)) 25%, rgb(var(--color-h-border)) 50%, rgb(var(--color-h-bg)) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}

@@ -73,13 +73,8 @@ export default function Sidebar() {
                 <Cross className="w-4 h-4 text-white" strokeWidth={3} />
               </div>
               <div className="min-w-0">
-<<<<<<< HEAD
-                <p className="text-white font-bold text-sm leading-tight">Kigali Health</p>
-                <p className="text-white/35 text-[10px] leading-tight mt-0.5">Unified Network · KUPRIN</p>
-=======
                 <p className="text-h-text font-bold text-sm leading-tight">Kigali Health</p>
                 <p className="text-h-text-light text-[10px] leading-tight mt-0.5">Unified Network · KUPRIN</p>
->>>>>>> fd5f7dc3a74b2c644847503c5d2a78f56a159ab3
               </div>
             </div>
           ) : (
