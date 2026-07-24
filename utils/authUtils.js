@@ -1,9 +1,35 @@
-import { DEMO_USERS } from '@/data/roles';
+import { loginStaff, loginPatient } from '@/lib/api';
+
+function initials(name) {
+  return name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
+}
 
 export async function loginWithCredentials(email, password) {
-  await new Promise(r => setTimeout(r, 700));
-  const user = DEMO_USERS.find(u => u.email.toLowerCase() === email.toLowerCase());
-  if (!user) throw new Error('No account found with that email address.');
-  if (user.password !== password) throw new Error('Incorrect password. Please try again.');
-  return user;
+  const staffResult = await loginStaff(email, password);
+  if (staffResult) {
+    return {
+      id: staffResult.access_token.slice(0, 8),
+      name: staffResult.name || email,
+      email,
+      role: staffResult.role,
+      avatar: initials(staffResult.name || email),
+      institution: staffResult.institution || null,
+      token: staffResult.access_token,
+    };
+  }
+
+  const patientResult = await loginPatient(email, password);
+  if (patientResult) {
+    return {
+      id: patientResult.patient_id,
+      name: patientResult.name || 'Patient',
+      email,
+      role: patientResult.role,
+      avatar: initials(patientResult.name || 'Patient'),
+      institution: null,
+      token: patientResult.access_token,
+    };
+  }
+
+  throw new Error('Invalid email or password.');
 }
