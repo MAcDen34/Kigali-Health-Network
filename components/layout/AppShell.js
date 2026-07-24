@@ -11,7 +11,6 @@ const PUBLIC_PATHS = ['/', '/login'];
 export default function AppShell({ children }) {
   const { state, hydrated } = useApp();
   const { user, sidebarCollapsed } = state;
-  const isDark = state.theme === 'dark';
   const router = useRouter();
   const pathname = usePathname();
   const isPublic = PUBLIC_PATHS.includes(pathname);
@@ -36,17 +35,7 @@ export default function AppShell({ children }) {
   if (!hasRouteAccess) return null;
 
   return (
-    <div className="flex h-screen overflow-hidden">
-      {/* Same photo/treatment as the login page. -z-10 keeps it behind Sidebar/Header/main. */}
-      <div
-        className="fixed inset-0 -z-10 bg-cover bg-center scale-110"
-        style={{
-          backgroundImage: "url('/login-hero.jpg')",
-          filter: isDark ? 'blur(28px) brightness(1.1)' : 'blur(28px) brightness(1.7) saturate(0.85)',
-        }}
-      />
-      <div className={`fixed inset-0 -z-10 ${isDark ? 'bg-h-bg/85' : 'bg-h-bg/50'}`} />
-
+    <div className="flex h-screen overflow-hidden bg-h-bg">
       <Sidebar />
       <div
         className={`flex flex-col flex-1 min-w-0 transition-all duration-300 overflow-hidden ${

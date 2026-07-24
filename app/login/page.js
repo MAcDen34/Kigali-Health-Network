@@ -19,7 +19,6 @@ const QUICK_DEMO = [
 export default function LoginPage() {
   const router = useRouter();
   const { state, dispatch } = useApp();
-  const isDark = state.theme === 'dark';
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPw, setShowPw] = useState(false);
@@ -100,17 +99,7 @@ export default function LoginPage() {
         </p>
       </div>
 
-      <div className="flex-1 relative flex flex-col items-center justify-center p-6 md:p-10 overflow-hidden">
-        {/* Light mode needs the photo lifted brighter — otherwise a light wash on a dark photo just goes flat. */}
-        <div
-          className="absolute inset-0 bg-cover bg-center scale-110"
-          style={{
-            backgroundImage: "url('/login-hero.jpg')",
-            filter: isDark ? 'blur(28px) brightness(1.1)' : 'blur(28px) brightness(1.7) saturate(0.85)',
-          }}
-        />
-        <div className={`absolute inset-0 ${isDark ? 'bg-h-bg/85' : 'bg-h-bg/50'}`} />
-
+      <div className="flex-1 relative flex flex-col items-center justify-center p-6 md:p-10 overflow-hidden" style={{ backgroundColor: 'rgb(var(--color-h-bg))' }}>
         <div className="absolute top-4 right-4 md:top-6 md:right-6">
           <ThemeToggle />
         </div>
