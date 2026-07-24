@@ -7,7 +7,8 @@ import { Activity, ArrowRight, ShieldCheck, ShieldOff, AlertTriangle, CheckCircl
 import Link from 'next/link';
 
 function PatientDashboard({ state }) {
-  const { consents, medicalHistory, auditLog, patientProfile } = state;
+  const { consents, medicalHistory: allHistory, auditLog, patientProfile } = state;
+  const medicalHistory = allHistory.filter(m => m.patient === patientProfile.name);
   const active = consents.filter(c => c.status === 'active').length;
   return (
     <>
@@ -264,7 +265,7 @@ export default function DashboardPage() {
   const { user } = state;
   if (!user) return null;
 
-  const accent = ROLE_ACCENT[user.role] || '#1B6EF3';
+  const accent = ROLE_ACCENT[user.role] || '#5A8AA6';
   const hour = new Date().getHours();
   const greet = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
 
@@ -291,7 +292,7 @@ export default function DashboardPage() {
             {ROLES[user.role]}
           </p>
           <h2 className="text-xl font-bold text-h-text">
-            {greet}, {user.name.split(' ')[0]} 👋
+            {greet}, {user.name.split(' ')[0]}
           </h2>
           <p className="text-sm text-h-text-muted mt-1">
             Here is what is happening on the Kigali Health Network today.

@@ -1,17 +1,46 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useApp } from '@/context/AppContext';
+import { ROLE_ACCENT } from '@/data/roles';
 import Badge from '@/components/ui/Badge';
 import KPICard from '@/components/ui/KPICard';
 import { Search, AlertTriangle, CheckCircle2, Pill, Filter } from 'lucide-react';
+import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 
 const STATUS_TONE = { active:'blue', dispensed:'green', flagged:'red' };
+const STATUS_CHART_COLOR = {
+  active:    'rgb(var(--color-h-blue))',
+  dispensed: 'rgb(var(--color-h-green))',
+  flagged:   'rgb(var(--color-h-red))',
+};
 
 export default function PharmacyPage() {
   const { state, dispatch } = useApp();
-  const { prescriptions } = state;
-  const [query, setQuery] = useState('');
+  const { user, prescriptions } = state;
+  const accent = ROLE_ACCENT[user?.role] || '#5A8AA6';
+  const searchParams = useSearchParams();
+  const [query, setQuery] = useState(() => searchParams.get('q') || '');
+  const [highlightRxId, setHighlightRxId] = useState(null);
+
+  // Deep-linked from header search (matched by code): prefill, scroll, flash.
+  useEffect(() => {
+    const q = searchParams.get('q');
+    if (!q) return;
+    setQuery(q);
+    const match = prescriptions.find(rx => rx.code === q);
+    if (!match) return;
+    setHighlightRxId(match.id);
+    requestAnimationFrame(() => {
+      document.getElementById(`rx-row-${match.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+    const t = setTimeout(() => setHighlightRxId(null), 2200);
+    return () => clearTimeout(t);
+  }, [searchParams, prescriptions]);
+
+  const [searchFocused, setSearchFocused] = useState(false);
   const [filter, setFilter] = useState('all');
+  const [hoveredSlice, setHoveredSlice] = useState(null);
 
   const dispense = (id) => dispatch({ type: 'DISPENSE_RX', payload: id });
 
@@ -27,6 +56,10 @@ export default function PharmacyPage() {
   const flagged = prescriptions.filter(rx => rx.flag).length;
   const dispensed = prescriptions.filter(rx => rx.status === 'dispensed').length;
 
+  const statusBreakdown = ['active', 'dispensed', 'flagged']
+    .map(s => ({ key: s, value: prescriptions.filter(rx => rx.status === s).length }))
+    .filter(d => d.value > 0);
+
   return (
     <div className="animate-fade-in space-y-5">
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -36,13 +69,54 @@ export default function PharmacyPage() {
         <KPICard title="Flagged"      value={flagged}              icon="AlertTriangle" color="red"   />
       </div>
 
+      <div className="card p-5 flex flex-col sm:flex-row items-center gap-6">
+        <div className="w-36 h-36 flex-shrink-0">
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie
+                data={statusBreakdown} dataKey="value" nameKey="key"
+                innerRadius={38} outerRadius={58} paddingAngle={3} strokeWidth={0}
+                onMouseEnter={(entry, _i, e) => setHoveredSlice({ key: entry.key, value: entry.value, x: e.clientX, y: e.clientY })}
+                onMouseMove={(entry, _i, e) => setHoveredSlice({ key: entry.key, value: entry.value, x: e.clientX, y: e.clientY })}
+                onMouseLeave={() => setHoveredSlice(null)}
+              >
+                {statusBreakdown.map(d => <Cell key={d.key} fill={STATUS_CHART_COLOR[d.key]} />)}
+              </Pie>
+            </PieChart>
+          </ResponsiveContainer>
+          {/* Custom tooltip: recharts' Pie tooltip snaps per-slice instead of following the cursor. */}
+          {hoveredSlice && (
+            <div
+              className="fixed z-50 pointer-events-none px-3 py-2 rounded-xl border border-h-border bg-h-surface shadow-modal"
+              style={{ left: hoveredSlice.x + 14, top: hoveredSlice.y - 14 }}
+            >
+              <p className="text-xs font-semibold text-h-text capitalize">{hoveredSlice.key}</p>
+              <p className="text-xs text-h-text-muted">{hoveredSlice.value} prescription{hoveredSlice.value === 1 ? '' : 's'}</p>
+            </div>
+          )}
+        </div>
+        <div className="flex-1 grid grid-cols-3 gap-3 w-full">
+          {['active', 'dispensed', 'flagged'].map(key => (
+            <div key={key} className="text-center sm:text-left">
+              <div className="flex items-center gap-1.5 justify-center sm:justify-start">
+                <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: STATUS_CHART_COLOR[key] }} />
+                <span className="text-xs text-h-text-muted capitalize">{key}</span>
+              </div>
+              <p className="text-lg font-bold text-h-text mt-0.5">{prescriptions.filter(rx => rx.status === key).length}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
       <div className="card p-5">
-        {/* Search + filter bar */}
         <div className="flex flex-col sm:flex-row gap-3 mb-5">
           <div className="relative flex-1">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-h-text-light" />
             <input value={query} onChange={e => setQuery(e.target.value)}
+              onFocus={() => setSearchFocused(true)}
+              onBlur={() => setSearchFocused(false)}
               placeholder="Search by patient, drug or code…"
+              style={searchFocused ? { borderColor:accent, boxShadow:`0 0 0 3px ${accent}25` } : {}}
               className="input-field pl-10" />
           </div>
           <div className="flex items-center gap-2">
@@ -58,12 +132,13 @@ export default function PharmacyPage() {
           </div>
         </div>
 
-        {/* Prescription list */}
         <div className="space-y-2.5">
           {list.map(rx => (
-            <div key={rx.id}
-              className={`rounded-xl border px-4 py-4 transition-colors ${
-                rx.flag ? 'border-h-red/25 bg-h-red-light/30' : 'border-h-border hover:border-h-blue/25'
+            <div key={rx.id} id={`rx-row-${rx.id}`}
+              className={`rounded-xl border px-4 py-4 transition-colors duration-700 ${
+                highlightRxId === rx.id
+                  ? 'border-h-blue/25'
+                  : rx.flag ? 'border-h-red/25 bg-h-red-light/30' : 'border-h-border hover:border-h-blue/25'
               }`}>
               <div className="flex items-start justify-between gap-3 flex-wrap">
                 <div className="flex items-start gap-3 min-w-0">

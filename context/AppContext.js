@@ -8,11 +8,13 @@ import {
 } from '@/data/mockData';
 
 const AppContext = createContext(null);
-const STORAGE_KEY = 'kunrn_session';
+const STORAGE_KEY = 'kuprin_session';
+const THEME_KEY = 'kuprin_theme';
 
 const initialState = {
   user: null,
   sidebarCollapsed: false,
+  theme: 'light', // corrected on mount from localStorage / OS preference
   // Records & consent
   patientProfile,
   consents: consentGrants,
@@ -41,6 +43,10 @@ function reducer(state, action) {
       return { ...state, sidebarCollapsed: !state.sidebarCollapsed };
     case 'SET_SIDEBAR':
       return { ...state, sidebarCollapsed: action.payload };
+    case 'SET_THEME':
+      return { ...state, theme: action.payload };
+    case 'TOGGLE_THEME':
+      return { ...state, theme: state.theme === 'dark' ? 'light' : 'dark' };
     case 'TOGGLE_CONSENT': {
       const consents = state.consents.map(c =>
         c.id === action.payload
@@ -68,7 +74,10 @@ function reducer(state, action) {
       return { ...state, notifications };
     }
     case 'MARK_ALL_READ': {
-      const notifications = state.notifications.map(n => ({ ...n, read: true }));
+      // Scoped to the requesting role only.
+      const notifications = state.notifications.map(n =>
+        n.role === action.payload ? { ...n, read: true } : n
+      );
       return { ...state, notifications };
     }
     case 'ADD_DIAGNOSIS': {
@@ -92,6 +101,11 @@ export function AppProvider({ children }) {
         dispatch({ type: 'LOGIN', payload: user });
       }
     } catch {}
+    try {
+      const savedTheme = localStorage.getItem(THEME_KEY);
+      const theme = savedTheme || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      dispatch({ type: 'SET_THEME', payload: theme });
+    } catch {}
     setHydrated(true);
   }, []);
 
@@ -100,6 +114,13 @@ export function AppProvider({ children }) {
     if (state.user) sessionStorage.setItem(STORAGE_KEY, JSON.stringify(state.user));
     else sessionStorage.removeItem(STORAGE_KEY);
   }, [state.user, hydrated]);
+
+  // At provider level (not AppShell) so it also covers the public login page.
+  useEffect(() => {
+    if (!hydrated) return;
+    document.documentElement.classList.toggle('dark', state.theme === 'dark');
+    try { localStorage.setItem(THEME_KEY, state.theme); } catch {}
+  }, [state.theme, hydrated]);
 
   return (
     <AppContext.Provider value={{ state, dispatch, hydrated }}>

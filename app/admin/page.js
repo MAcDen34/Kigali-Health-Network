@@ -4,6 +4,26 @@ import { useApp } from '@/context/AppContext';
 import Badge from '@/components/ui/Badge';
 import KPICard from '@/components/ui/KPICard';
 import { Building2, KeyRound, CheckCircle2, AlertCircle, Activity, Plus } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+
+// Wraps long service names onto two lines instead of an angled label.
+function ServiceNameTick({ x, y, payload }) {
+  const words = payload.value.split(' ');
+  let line1 = payload.value;
+  let line2 = '';
+  if (words.length > 1) {
+    line2 = words.pop();
+    line1 = words.join(' ');
+  }
+  return (
+    <g transform={`translate(${x},${y})`}>
+      <text textAnchor="middle" fill="rgb(var(--color-h-text-muted))" fontSize={11}>
+        <tspan x={0} dy={12}>{line1}</tspan>
+        {line2 && <tspan x={0} dy={13}>{line2}</tspan>}
+      </text>
+    </g>
+  );
+}
 
 export default function AdminPage() {
   const { state } = useApp();
@@ -22,7 +42,31 @@ export default function AdminPage() {
         <KPICard title="Audit events"    value={platformAudit.length}   icon="Shield"     color="purple" />
       </div>
 
-      {/* Tabs */}
+      <div className="card p-5">
+        <h3 className="section-title">Service latency</h3>
+        <div className="h-48">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={serviceHealth} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgb(var(--color-h-border))" vertical={false} />
+              <XAxis dataKey="name" tick={<ServiceNameTick />} axisLine={{ stroke: 'rgb(var(--color-h-border))' }} tickLine={false} interval={0} height={40} />
+              <YAxis tick={{ fill: 'rgb(var(--color-h-text-muted))', fontSize: 12 }} axisLine={false} tickLine={false} width={52} unit="ms" />
+              <Tooltip
+                cursor={{ fill: 'rgb(var(--color-h-bg))' }}
+                formatter={(value) => [`${value}ms`, 'Latency']}
+                contentStyle={{ background: 'rgb(var(--color-h-surface))', border: '1px solid rgb(var(--color-h-border))', borderRadius: 12, fontSize: 12 }}
+                labelStyle={{ color: 'rgb(var(--color-h-text))', fontWeight: 600, marginBottom: 4 }}
+                itemStyle={{ color: 'rgb(var(--color-h-text-muted))' }}
+              />
+              <Bar dataKey="latency" radius={[6, 6, 0, 0]} maxBarSize={48}>
+                {serviceHealth.map(s => (
+                  <Cell key={s.name} fill={s.status === 'healthy' ? 'rgb(var(--color-h-green))' : 'rgb(var(--color-h-amber))'} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
       <div className="card overflow-hidden">
         <div className="flex border-b border-h-border px-5">
           {[['institutions','Institutions'],['health','Service Health'],['audit','Platform Audit']].map(([k,l]) => (

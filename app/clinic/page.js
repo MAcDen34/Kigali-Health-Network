@@ -1,6 +1,8 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useApp } from '@/context/AppContext';
+import { ROLE_ACCENT } from '@/data/roles';
 import Badge from '@/components/ui/Badge';
 import Modal from '@/components/ui/Modal';
 import KPICard from '@/components/ui/KPICard';
@@ -10,24 +12,48 @@ export default function ClinicPage() {
   const { state, dispatch } = useApp();
   const { user, clinicPatients, medicalHistory, prescriptions } = state;
   const isNurse = user?.role === 'NURSE';
-  const [selected, setSelected] = useState(clinicPatients[0]);
+  const accent = ROLE_ACCENT[user?.role] || '#5A8AA6';
+  const searchParams = useSearchParams();
+  const patientParam = searchParams.get('patient');
+  const [selected, setSelected] = useState(() =>
+    clinicPatients.find(p => p.name === patientParam) || clinicPatients[0]
+  );
+  const [highlightId, setHighlightId] = useState(null);
+
+  // Deep-linked from header search: select, scroll into view, flash.
+  useEffect(() => {
+    if (!patientParam) return;
+    const match = clinicPatients.find(p => p.name === patientParam);
+    if (!match) return;
+    setSelected(match);
+    setHighlightId(match.id);
+    requestAnimationFrame(() => {
+      document.getElementById(`patient-row-${match.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+    const t = setTimeout(() => setHighlightId(null), 2200);
+    return () => clearTimeout(t);
+  }, [patientParam, clinicPatients]);
+
   const [query, setQuery] = useState('');
+  const [searchFocused, setSearchFocused] = useState(false);
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState({ detail: '', type: isNurse ? 'Vitals' : 'Diagnosis' });
 
   const filtered = clinicPatients.filter(p =>
     p.name.toLowerCase().includes(query.toLowerCase())
   );
-  const patientHistory = selected?.consent ? medicalHistory.slice(0, 3) : [];
+  const patientHistory = selected?.consent
+    ? medicalHistory.filter(m => m.patient === selected.name).slice(0, 3)
+    : [];
   const patientRx = prescriptions.filter(rx => rx.patient === selected?.name);
   const consented = clinicPatients.filter(p => p.consent).length;
   const flagged = prescriptions.filter(p => p.flag).length;
 
   const handleSave = () => {
-    if (!form.detail.trim()) return;
+    if (!form.detail.trim() || !selected) return;
     dispatch({
       type: 'ADD_DIAGNOSIS',
-      payload: { detail: form.detail, type: form.type, institution: user.institution, date: new Date().toISOString().split('T')[0], doctor: user.name }
+      payload: { patient: selected.name, detail: form.detail, type: form.type, institution: user.institution, date: new Date().toISOString().split('T')[0], doctor: user.name }
     });
     setModal(false);
     setForm({ detail: '', type: isNurse ? 'Vitals' : 'Diagnosis' });
@@ -43,20 +69,24 @@ export default function ClinicPage() {
       </div>
 
       <div className="grid lg:grid-cols-[260px_1fr] gap-5">
-        {/* Patient list */}
         <div className="card overflow-hidden">
           <div className="p-3.5 border-b border-h-border">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-h-text-light" />
               <input value={query} onChange={e => setQuery(e.target.value)}
+                onFocus={() => setSearchFocused(true)}
+                onBlur={() => setSearchFocused(false)}
                 placeholder="Search patients…"
-                className="w-full pl-8 pr-3 py-2 text-sm bg-h-bg border border-h-border rounded-xl focus:outline-none focus:border-h-blue placeholder:text-h-text-light" />
+                style={searchFocused ? { borderColor:accent, boxShadow:`0 0 0 3px ${accent}25` } : {}}
+                className="w-full pl-8 pr-3 py-2 text-sm bg-h-bg border border-h-border rounded-xl focus:outline-none transition-colors placeholder:text-h-text-light" />
             </div>
           </div>
           <div className="overflow-y-auto max-h-[480px] scrollbar-thin divide-y divide-h-border">
             {filtered.map(p => (
-              <button key={p.id} onClick={() => setSelected(p)}
-                className={`w-full text-left px-4 py-3.5 transition-colors ${selected?.id === p.id ? 'bg-h-blue-light' : 'hover:bg-h-bg'}`}>
+              <button key={p.id} id={`patient-row-${p.id}`} onClick={() => setSelected(p)}
+                className={`w-full text-left px-4 py-3.5 transition-colors duration-700 ${
+                  highlightId === p.id ? 'bg-h-bg' : selected?.id === p.id ? 'bg-h-blue-light' : 'hover:bg-h-bg'
+                }`}>
                 <div className="flex items-center justify-between mb-1">
                   <p className="text-sm font-semibold text-h-text truncate">{p.name}</p>
                   {p.alerts > 0 && <AlertTriangle className="w-3.5 h-3.5 text-h-amber flex-shrink-0" />}
@@ -72,10 +102,8 @@ export default function ClinicPage() {
           </div>
         </div>
 
-        {/* Patient detail */}
         {selected && (
           <div className="space-y-4">
-            {/* Header */}
             <div className="card p-5">
               <div className="flex items-start justify-between flex-wrap gap-3">
                 <div className="flex items-center gap-3">
@@ -116,7 +144,6 @@ export default function ClinicPage() {
               </div>
             ) : (
               <>
-                {/* History */}
                 <div className="card p-5">
                   <h4 className="section-title">Medical history</h4>
                   <div className="space-y-2.5">
@@ -135,7 +162,6 @@ export default function ClinicPage() {
                   </div>
                 </div>
 
-                {/* Prescriptions */}
                 {patientRx.length > 0 && (
                   <div className="card p-5">
                     <h4 className="section-title">Prescriptions</h4>
@@ -160,14 +186,11 @@ export default function ClinicPage() {
         )}
       </div>
 
-      {/* New entry modal */}
       <Modal open={modal} onClose={() => setModal(false)} title={isNurse ? 'Record vitals' : 'New clinical entry'}>
         <div className="space-y-4">
           <div>
             <label className="block text-xs font-semibold text-h-text mb-1.5">Patient</label>
-            <select className="input-field">
-              {clinicPatients.filter(p => p.consent).map(p => <option key={p.id}>{p.name}</option>)}
-            </select>
+            <input className="input-field bg-h-bg text-h-text-muted" value={selected?.name || ''} disabled readOnly />
           </div>
           {!isNurse && (
             <div>

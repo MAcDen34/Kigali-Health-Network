@@ -3,8 +3,9 @@ import { useState, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
 import Badge from '@/components/ui/Badge';
 import KPICard from '@/components/ui/KPICard';
-import { ShieldCheck, ShieldOff, Clock3, FileText, AlertTriangle, Activity, CheckCircle2 } from 'lucide-react';
+import { ShieldCheck, ShieldOff, Clock3, FileText, AlertTriangle, Activity, CheckCircle2, WifiOff } from 'lucide-react';
 import { getPatient } from '@/lib/api';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 const TYPE_TONE = { Diagnosis:'blue', 'Lab Result':'teal', Vitals:'green', Prescription:'purple' };
 
@@ -26,9 +27,18 @@ export default function RecordsPage() {
       });
   }, []);
 
-  const { patientProfile, consents, medicalHistory, auditLog } = state;
+  const { patientProfile, consents, medicalHistory: allHistory, auditLog } = state;
+  const medicalHistory = allHistory.filter(m => m.patient === patientProfile.name);
   const [tab, setTab] = useState('history');
   const active = consents.filter(c => c.status === 'active').length;
+
+  const visitsByInstitution = Object.values(
+    medicalHistory.reduce((acc, m) => {
+      acc[m.institution] = acc[m.institution] || { institution: m.institution, visits: 0 };
+      acc[m.institution].visits += 1;
+      return acc;
+    }, {})
+  ).sort((a, b) => b.visits - a.visits);
 
   const toggle = (id) => dispatch({ type: 'TOGGLE_CONSENT', payload: id });
 
@@ -42,11 +52,60 @@ export default function RecordsPage() {
         <KPICard title="Record entries"   value={medicalHistory.length}          icon="FileText"      color="blue"  />
       </div>
 
+      {/* Most frequented hospitals */}
+      <div className="card p-5">
+        <h3 className="section-title">Most frequented hospitals</h3>
+        {visitsByInstitution.length === 0 ? (
+          <p className="text-sm text-h-text-muted">No recorded visits yet.</p>
+        ) : (
+          <div style={{ height: Math.max(visitsByInstitution.length * 44, 100) }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={visitsByInstitution} layout="vertical" margin={{ top: 4, right: 24, left: 0, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgb(var(--color-h-border))" horizontal={false} />
+                <XAxis type="number" allowDecimals={false} tick={{ fill: 'rgb(var(--color-h-text-muted))', fontSize: 12 }} axisLine={{ stroke: 'rgb(var(--color-h-border))' }} tickLine={false} />
+                <YAxis type="category" dataKey="institution" width={160} tick={{ fill: 'rgb(var(--color-h-text-muted))', fontSize: 12 }} axisLine={false} tickLine={false} />
+                <Tooltip
+                  cursor={{ fill: 'rgb(var(--color-h-bg))' }}
+                  formatter={(value) => [`${value} visit${value === 1 ? '' : 's'}`, 'Visits']}
+                  contentStyle={{ background: 'rgb(var(--color-h-surface))', border: '1px solid rgb(var(--color-h-border))', borderRadius: 12, fontSize: 12 }}
+                  labelStyle={{ color: 'rgb(var(--color-h-text))', fontWeight: 600, marginBottom: 4 }}
+                  itemStyle={{ color: 'rgb(var(--color-h-text-muted))' }}
+                />
+                <Bar dataKey="visits" radius={[0, 6, 6, 0]} maxBarSize={28} fill="rgb(var(--color-h-teal))" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+      </div>
+
       <div className="grid lg:grid-cols-3 gap-5">
         {/* Profile card */}
         <div className="card p-5 lg:col-span-1 h-fit">
-          {loading && <p className="text-sm text-h-text-muted">Loading patient...</p>}
-          {error && <p className="text-sm text-red-500">Error: {error}</p>}
+          {loading && (
+            <div className="space-y-4 animate-pulse">
+              <div className="flex items-center gap-3 pb-4 border-b border-h-border">
+                <div className="w-12 h-12 rounded-2xl animate-shimmer" />
+                <div className="flex-1 space-y-2">
+                  <div className="h-3.5 w-32 rounded animate-shimmer" />
+                  <div className="h-3 w-24 rounded animate-shimmer" />
+                </div>
+              </div>
+              <div className="space-y-3">
+                <div className="h-3.5 w-full rounded animate-shimmer" />
+                <div className="h-3.5 w-full rounded animate-shimmer" />
+                <div className="h-3.5 w-2/3 rounded animate-shimmer" />
+              </div>
+            </div>
+          )}
+          {error && (
+            <div className="text-center py-6">
+              <WifiOff className="w-8 h-8 text-h-text-light mx-auto mb-3" />
+              <p className="text-sm font-semibold text-h-text mb-1">Live records service offline</p>
+              <p className="text-xs text-h-text-muted max-w-[220px] mx-auto">
+                This card mirrors the records-service backend directly — it&rsquo;ll populate automatically once that service is running. Everything below still works from local data.
+              </p>
+            </div>
+          )}
           {(!loading && !error && realPatient) && (
             <>
               <div className="flex items-center gap-3 mb-4 pb-4 border-b border-h-border">
