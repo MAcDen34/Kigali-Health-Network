@@ -31,6 +31,7 @@ class LoginRequest(BaseModel):
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
+    staff_id: str
     role: str
     name: str
     institution_id: Optional[str] = None
@@ -60,7 +61,7 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)):
     Frontend usage:
         POST /api/admin/auth/login
         Body: { email, password }
-        → { access_token, role, name, institution_id, institution }
+        → { access_token, staff_id, role, name, institution_id, institution }
 
     The access_token is then sent on every subsequent request as:
         Authorization: Bearer <token>
@@ -88,6 +89,7 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)):
 
     return TokenResponse(
         access_token=token,
+        staff_id=str(staff.id),
         role=staff.role,
         name=staff.full_name,
         institution_id=str(staff.institution_id) if staff.institution_id else None,

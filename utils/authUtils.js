@@ -8,7 +8,7 @@ export async function loginWithCredentials(email, password) {
   const staffResult = await loginStaff(email, password);
   if (staffResult) {
     return {
-      id: staffResult.access_token.slice(0, 8),
+      id: staffResult.staff_id,
       name: staffResult.name || email,
       email,
       role: staffResult.role,
