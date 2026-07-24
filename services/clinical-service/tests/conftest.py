@@ -1,27 +1,46 @@
+import os
+import jwt
 import pytest
-from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
+from datetime import datetime, timedelta
 from sqlalchemy.orm import sessionmaker
+from fastapi.testclient import TestClient
 from app.main import app
-from app.database import Base, get_db
+from app.database import engine, get_db
 
-TEST_DB = "postgresql://kuprin:kuprin_dev@localhost:5432/kuprin_test"
-engine = create_engine(TEST_DB)
-TestingSession = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+JWT_SECRET = os.getenv("JWT_SECRET", "dev-secret-change-in-production")
 
-def override_get_db():
-    db = TestingSession()
-    try:
-        yield db
-    finally:
-        db.rollback()
-        db.close()
+@pytest.fixture()
+def db_session():
+    connection = engine.connect()
+    transaction = connection.begin()
+    Session = sessionmaker(bind=connection)
+    session = Session()
 
-app.dependency_overrides[get_db] = override_get_db
+    yield session
 
-@pytest.fixture
-def client():
-    Base.metadata.create_all(bind=engine)
-    with TestClient(app) as c:
-        yield c
-    Base.metadata.drop_all(bind=engine)
+    session.close()
+    transaction.rollback()
+    connection.close()
+
+@pytest.fixture()
+def client(db_session):
+    def override_get_db():
+        yield db_session
+
+    app.dependency_overrides[get_db] = override_get_db
+    yield TestClient(app)
+    app.dependency_overrides.clear()
+
+@pytest.fixture()
+def make_token():
+    """Returns a function that builds a real, valid JWT for a fake test actor."""
+    def _make(role="DOCTOR", actor_id="11111111-1111-1111-1111-111111111111", institution_id="22222222-2222-2222-2222-222222222222"):
+        payload = {
+            "sub": actor_id,
+            "role": role,
+            "institution_id": institution_id,
+            "exp": datetime.utcnow() + timedelta(minutes=30),
+            "iat": datetime.utcnow(),
+        }
+        return jwt.encode(payload, JWT_SECRET, algorithm="HS256")
+    return _make
