@@ -5,6 +5,7 @@ import { Bell, Pill, ShieldOff, CheckCircle2, AlertTriangle, Activity, BellOff }
 
 const TYPE_CONFIG = {
   prescription: { icon: Pill,          tone:'blue',   bg:'bg-h-blue-light text-h-blue' },
+  reminder:     { icon: Pill,          tone:'teal',   bg:'bg-h-teal-light text-h-teal' },
   consent:      { icon: ShieldOff,     tone:'amber',  bg:'bg-h-amber-light text-h-amber' },
   claim:        { icon: CheckCircle2,  tone:'green',  bg:'bg-h-green-light text-h-green' },
   alert:        { icon: AlertTriangle, tone:'red',    bg:'bg-h-red-light text-h-red' },
@@ -13,7 +14,8 @@ const TYPE_CONFIG = {
 
 export default function NotificationsPage() {
   const { state, dispatch } = useApp();
-  const { notifications } = state;
+  const { user } = state;
+  const notifications = state.notifications.filter(n => n.role === user?.role);
   const unread = notifications.filter(n => !n.read).length;
 
   return (
@@ -25,7 +27,7 @@ export default function NotificationsPage() {
           )}
         </div>
         {unread > 0 && (
-          <button onClick={() => dispatch({ type:'MARK_ALL_READ' })}
+          <button onClick={() => dispatch({ type:'MARK_ALL_READ', payload: user?.role })}
             className="text-xs font-semibold text-h-blue hover:text-h-blue-dark transition-colors">
             Mark all as read
           </button>
@@ -45,7 +47,7 @@ export default function NotificationsPage() {
             return (
               <div key={n.id}
                 onClick={() => dispatch({ type:'MARK_READ', payload:n.id })}
-                className={`card p-4 cursor-pointer transition-all hover:shadow-card-hover hover:-translate-y-0.5 ${!n.read ? 'border-h-blue/25 bg-h-blue-light/20' : ''}`}>
+                className={`card p-4 cursor-pointer transition-all hover:-translate-y-0.5 ${!n.read ? 'border-h-blue/25 bg-h-blue-light/20' : ''}`}>
                 <div className="flex items-start gap-3.5">
                   <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${cfg.bg}`}>
                     <Icon className="w-4.5 h-4.5" />
