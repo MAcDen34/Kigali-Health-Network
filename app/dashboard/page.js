@@ -1,22 +1,54 @@
 'use client';
+import { useState, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
 import { ROLES, ROLE_ACCENT } from '@/data/roles';
 import KPICard from '@/components/ui/KPICard';
 import Badge from '@/components/ui/Badge';
 import { Activity, ArrowRight, ShieldCheck, ShieldOff, AlertTriangle, CheckCircle2, Pill } from 'lucide-react';
 import Link from 'next/link';
+import { listMyConsents, listMyMedicalRecords, listMyAuditLog, listInstitutions, listAuditEvents, checkServicesHealth } from '@/lib/api';
+
+const INSTITUTION_NAMES = {
+  '55555555-5555-5555-5555-555555555555': 'King Faisal Hospital',
+  '66666666-6666-6666-6666-666666666666': 'King Faisal Hospital',
+  '77777777-7777-7777-7777-777777777777': 'Legacy Clinic — Remera',
+};
 
 function PatientDashboard({ state }) {
-  const { consents, medicalHistory: allHistory, auditLog, patientProfile } = state;
-  const medicalHistory = allHistory.filter(m => m.patient === patientProfile.name);
-  const active = consents.filter(c => c.status === 'active').length;
+  const patientId = state.user?.id;
+  const token = state.user?.token;
+  const [consents, setConsents] = useState([]);
+  const [medicalHistory, setMedicalHistory] = useState([]);
+  const [auditLog, setAuditLog] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!patientId || !token) return;
+    Promise.all([
+      listMyConsents(patientId, token),
+      listMyMedicalRecords(patientId, token),
+      listMyAuditLog(patientId, token),
+    ])
+      .then(([consentData, historyData, auditData]) => {
+        setConsents(consentData);
+        setMedicalHistory(historyData);
+        setAuditLog(auditData);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, [patientId, token]);
+
+  if (loading) return <p className="text-sm text-h-text-muted">Loading your dashboard...</p>;
+
+  const active = consents.filter(c => !c.revoked_at).length;
+
   return (
     <>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <KPICard title="Active consents"   value={active}                         icon="ShieldCheck"   color="teal"   />
-        <KPICard title="Medical records"   value={medicalHistory.length}          icon="FileText"      color="blue"   />
-        <KPICard title="Allergies on file" value={patientProfile.allergies.length}icon="AlertTriangle" color="amber"  />
-        <KPICard title="Access events"     value={auditLog.length} subtitle="Last 30 days" icon="Eye" color="purple" />
+        <KPICard title="Active consents"   value={active}                icon="ShieldCheck"   color="teal"   />
+        <KPICard title="Medical records"   value={medicalHistory.length} icon="FileText"      color="blue"   />
+        <KPICard title="Allergies on file" value={state.user?.allergies?.length || 0} icon="AlertTriangle" color="amber"  />
+        <KPICard title="Access events"     value={auditLog.length} subtitle="All time" icon="Eye" color="purple" />
       </div>
       <div className="grid lg:grid-cols-2 gap-5">
         <div className="card p-5">
@@ -27,32 +59,37 @@ function PatientDashboard({ state }) {
             </Link>
           </div>
           <div className="space-y-2.5">
-            {consents.map(c => (
-              <div key={c.id} className="flex items-center justify-between py-2.5 border-b border-h-border last:border-0">
-                <div>
-                  <p className="text-sm font-medium text-h-text">{c.institution}</p>
-                  <p className="text-xs text-h-text-muted">{c.type} · Granted {c.grantedAt}</p>
+            {consents.length === 0 && <p className="text-sm text-h-text-muted">No consent grants yet.</p>}
+            {consents.map(c => {
+              const isActive = !c.revoked_at;
+              return (
+                <div key={c.id} className="flex items-center justify-between py-2.5 border-b border-h-border last:border-0">
+                  <div>
+                    <p className="text-sm font-medium text-h-text">{INSTITUTION_NAMES[c.institution_id] || c.institution_id}</p>
+                    <p className="text-xs text-h-text-muted">Granted {new Date(c.granted_at).toLocaleDateString()}</p>
+                  </div>
+                  <Badge tone={isActive ? 'green' : 'gray'}>
+                    {isActive ? 'Active' : 'Revoked'}
+                  </Badge>
                 </div>
-                <Badge tone={c.status === 'active' ? 'green' : 'gray'}>
-                  {c.status === 'active' ? 'Active' : 'Revoked'}
-                </Badge>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
         <div className="card p-5">
           <h3 className="section-title">Recent access log</h3>
           <div className="space-y-3">
+            {auditLog.length === 0 && <p className="text-sm text-h-text-muted">No access events yet.</p>}
             {auditLog.slice(0, 4).map(a => (
               <div key={a.id} className="flex items-start gap-3">
                 <div className="w-7 h-7 rounded-full bg-h-bg flex items-center justify-center flex-shrink-0 mt-0.5">
                   <Activity className="w-3.5 h-3.5 text-h-text-muted" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm text-h-text font-medium truncate">{a.actor}</p>
+                  <p className="text-sm text-h-text font-medium truncate">{a.actor_id === patientId ? 'You' : a.actor_id}</p>
                   <p className="text-xs text-h-text-muted truncate">{a.action}</p>
                 </div>
-                <span className="text-[11px] text-h-text-light flex-shrink-0">{a.timestamp.split(' ')[1]}</span>
+                <span className="text-[11px] text-h-text-light flex-shrink-0">{new Date(a.timestamp).toLocaleTimeString()}</span>
               </div>
             ))}
           </div>
@@ -205,9 +242,33 @@ function InsuranceDashboard({ state }) {
 }
 
 function AdminDashboard({ state }) {
-  const { institutions, serviceHealth, platformAudit } = state;
+  const token = state.user?.token;
+  const [institutions, setInstitutions] = useState([]);
+  const [platformAudit, setPlatformAudit] = useState([]);
+  const [serviceHealth, setServiceHealth] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!token) return;
+    Promise.all([
+      listInstitutions(token),
+      listAuditEvents(token),
+      checkServicesHealth(token),
+    ])
+      .then(([inst, audit, health]) => {
+        setInstitutions(inst);
+        setPlatformAudit(audit);
+        setServiceHealth(health.map(h => ({ ...h, name: h.service })));
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, [token]);
+
+  if (loading) return <p className="text-sm text-h-text-muted">Loading platform data...</p>;
+
   const healthy = serviceHealth.filter(s => s.status === 'healthy').length;
-  const pending = institutions.filter(i => i.status === 'pending').length;
+  const pending = institutions.filter(i => !i.active).length;
+
   return (
     <>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -242,16 +303,17 @@ function AdminDashboard({ state }) {
         </div>
         <div className="card p-5">
           <h3 className="section-title">Platform audit</h3>
+          {platformAudit.length === 0 && <p className="text-sm text-h-text-muted">No audit events yet.</p>}
           {platformAudit.slice(0, 4).map(a => (
             <div key={a.id} className="flex items-start gap-3 py-2.5 border-b border-h-border last:border-0">
               <div className="w-7 h-7 rounded-full bg-h-bg flex items-center justify-center flex-shrink-0 mt-0.5">
                 <Activity className="w-3.5 h-3.5 text-h-text-muted" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-h-text truncate">{a.actor}</p>
+                <p className="text-sm font-medium text-h-text truncate">{a.actor_name || 'Unknown'}</p>
                 <p className="text-xs text-h-text-muted truncate">{a.action}</p>
               </div>
-              <span className="text-[11px] text-h-text-light flex-shrink-0 whitespace-nowrap">{a.timestamp.split(' ')[1]}</span>
+              <span className="text-[11px] text-h-text-light flex-shrink-0 whitespace-nowrap">{new Date(a.timestamp).toLocaleTimeString()}</span>
             </div>
           ))}
         </div>
@@ -283,7 +345,6 @@ export default function DashboardPage() {
 
   return (
     <div className="animate-fade-in">
-      {/* Welcome banner */}
       <div className="rounded-2xl p-5 mb-6 relative overflow-hidden"
         style={{ background: `linear-gradient(135deg, ${accent}15 0%, ${accent}05 100%)`, border: `1px solid ${accent}25` }}>
         <div className="absolute -right-8 -top-8 w-32 h-32 rounded-full" style={{ backgroundColor: `${accent}08` }} />
