@@ -1,12 +1,12 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
+import { listInstitutions, listAuditEvents, checkServicesHealth } from '@/lib/api';
 import Badge from '@/components/ui/Badge';
 import KPICard from '@/components/ui/KPICard';
-import { Building2, KeyRound, CheckCircle2, AlertCircle, Activity, Plus } from 'lucide-react';
+import { Building2, CheckCircle2, AlertCircle, Activity, Plus } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
-// Wraps long service names onto two lines instead of an angled label.
 function ServiceNameTick({ x, y, payload }) {
   const words = payload.value.split(' ');
   let line1 = payload.value;
@@ -27,11 +27,39 @@ function ServiceNameTick({ x, y, payload }) {
 
 export default function AdminPage() {
   const { state } = useApp();
-  const { institutions, serviceHealth, platformAudit } = state;
+  const token = state.user?.token;
+
+  const [institutions, setInstitutions] = useState([]);
+  const [platformAudit, setPlatformAudit] = useState([]);
+  const [serviceHealth, setServiceHealth] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [tab, setTab] = useState('institutions');
 
+  useEffect(() => {
+    if (!token) return;
+    Promise.all([
+      listInstitutions(token),
+      listAuditEvents(token),
+      checkServicesHealth(token),
+    ])
+      .then(([inst, audit, health]) => {
+        setInstitutions(inst);
+        setPlatformAudit(audit);
+        setServiceHealth(health.map(h => ({ ...h, name: h.service })));
+        setLoading(false);
+      })
+      .catch(err => {
+        setError(err.message);
+        setLoading(false);
+      });
+  }, [token]);
+
+  if (loading) return <div className="p-5 text-sm text-h-text-muted">Loading platform data...</div>;
+  if (error) return <div className="p-5 text-sm text-red-500">Error: {error}</div>;
+
   const healthy = serviceHealth.filter(s => s.status === 'healthy').length;
-  const pending = institutions.filter(i => i.status === 'pending').length;
+  const pending = institutions.filter(i => !i.active).length;
 
   return (
     <div className="animate-fade-in space-y-5">
@@ -43,7 +71,7 @@ export default function AdminPage() {
       </div>
 
       <div className="card p-5">
-        <h3 className="section-title">Service latency</h3>
+        <h3 className="section-title">Service latency (live)</h3>
         <div className="h-48">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={serviceHealth} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
@@ -93,17 +121,13 @@ export default function AdminPage() {
                     </div>
                     <div className="min-w-0">
                       <p className="text-sm font-bold text-h-text">{inst.name}</p>
-                      <p className="text-xs text-h-text-muted">{inst.type} · {inst.staff} staff · Joined {inst.joined}</p>
+                      <p className="text-xs text-h-text-muted">{inst.type} · {inst.staff_count} staff · Joined {new Date(inst.created_at).toLocaleDateString()}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3 flex-shrink-0">
-                    <span className="text-xs font-mono text-h-text-muted">{inst.apiToken}</span>
-                    <Badge tone={inst.status === 'active' ? 'green' : 'amber'}>
-                      {inst.status === 'active' ? 'Active' : 'Pending review'}
+                    <Badge tone={inst.active ? 'green' : 'amber'}>
+                      {inst.active ? 'Active' : 'Pending review'}
                     </Badge>
-                    <button className="flex items-center gap-1.5 text-xs font-semibold text-h-blue hover:text-h-blue-dark transition-colors">
-                      <KeyRound className="w-3.5 h-3.5" /> Manage token
-                    </button>
                   </div>
                 </div>
               ))}
@@ -120,13 +144,13 @@ export default function AdminPage() {
                     <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${s.status==='healthy'?'bg-h-green':'bg-h-amber animate-pulse'}`} />
                     <div>
                       <p className="text-sm font-semibold text-h-text">{s.name}</p>
-                      <p className="text-xs font-mono text-h-text-muted">:{s.port} · uptime {s.uptime}</p>
+                      <p className="text-xs font-mono text-h-text-muted">:{s.port}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-4">
                     <div className="text-right">
                       <p className={`text-sm font-bold ${s.latency > 100 ? 'text-h-amber' : 'text-h-green'}`}>{s.latency}ms</p>
-                      <p className="text-xs text-h-text-muted">avg latency</p>
+                      <p className="text-xs text-h-text-muted">live latency</p>
                     </div>
                     <Badge tone={s.status === 'healthy' ? 'green' : 'amber'}>
                       {s.status === 'healthy' ? <CheckCircle2 className="w-3 h-3" /> : <AlertCircle className="w-3 h-3" />}
@@ -147,11 +171,11 @@ export default function AdminPage() {
                       <Activity className="w-4 h-4 text-h-text-muted" />
                     </div>
                     <div className="min-w-0">
-                      <p className="text-sm font-semibold text-h-text truncate">{a.actor}</p>
-                      <p className="text-xs text-h-text-muted truncate">{a.action} · {a.institution}</p>
+                      <p className="text-sm font-semibold text-h-text truncate">{a.actor_name || 'Unknown'}</p>
+                      <p className="text-xs text-h-text-muted truncate">{a.action} {a.target ? `· ${a.target}` : ''}</p>
                     </div>
                   </div>
-                  <span className="text-xs text-h-text-light flex-shrink-0 ml-3 whitespace-nowrap">{a.timestamp}</span>
+                  <span className="text-xs text-h-text-light flex-shrink-0 ml-3 whitespace-nowrap">{new Date(a.timestamp).toLocaleString()}</span>
                 </div>
               ))}
             </div>
