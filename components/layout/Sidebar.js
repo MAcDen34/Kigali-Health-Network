@@ -4,10 +4,11 @@ import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useApp } from '@/context/AppContext';
 import { ROLES, ROLE_NAV, ROLE_ACCENT, DEMO_USERS } from '@/data/roles';
+import Modal from '@/components/ui/Modal';
 import {
   LayoutDashboard, ShieldCheck, Stethoscope, Pill, FileStack,
   Settings2, ChevronLeft, ChevronRight, ChevronsUpDown, LogOut,
-  Activity, Heart, Cross, Building2,
+  Activity, Heart, Cross, Building2, Lock,
 } from 'lucide-react';
 
 // Notifications is reached via the header bell only, not listed here.
@@ -27,6 +28,9 @@ export default function Sidebar() {
   const { state, dispatch } = useApp();
   const { user, sidebarCollapsed } = state;
   const [switcherOpen, setSwitcherOpen] = useState(false);
+  const [switchTarget, setSwitchTarget] = useState(null);
+  const [switchPassword, setSwitchPassword] = useState('');
+  const [switchError, setSwitchError] = useState('');
   if (!user) return null;
 
   const allowed = ROLE_NAV[user.role] || [];
@@ -35,8 +39,24 @@ export default function Sidebar() {
 
   const switchTo = (nextUser) => {
     dispatch({ type:'LOGIN', payload:nextUser });
-    setSwitcherOpen(false);
     router.push('/dashboard');
+  };
+
+  const openSwitchConfirm = (u) => {
+    setSwitcherOpen(false);
+    setSwitchTarget(u);
+    setSwitchPassword('');
+    setSwitchError('');
+  };
+
+  const confirmSwitch = (e) => {
+    e.preventDefault();
+    if (switchPassword === switchTarget.password) {
+      switchTo(switchTarget);
+      setSwitchTarget(null);
+    } else {
+      setSwitchError('Incorrect password.');
+    }
   };
 
   const NavLink = ({ item }) => {
@@ -124,17 +144,18 @@ export default function Sidebar() {
                       return (
                         <button
                           key={u.id}
-                          onClick={() => switchTo(u)}
+                          onClick={() => openSwitchConfirm(u)}
                           className="flex items-center gap-2.5 w-full px-3 py-2 hover:bg-h-bg transition-colors text-left"
                         >
                           <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0"
                             style={{ backgroundColor: uAccent }}>
                             {u.avatar}
                           </div>
-                          <div className="min-w-0">
+                          <div className="min-w-0 flex-1">
                             <p className="text-xs font-semibold text-h-text truncate">{u.name}</p>
                             <p className="text-[10px] text-h-text-light truncate">{ROLES[u.role]}</p>
                           </div>
+                          <Lock className="w-3 h-3 text-h-text-light flex-shrink-0" />
                         </button>
                       );
                     })}
@@ -160,6 +181,39 @@ export default function Sidebar() {
           {sidebarCollapsed ? <ChevronRight className="w-3.5 h-3.5" /> : <ChevronLeft className="w-3.5 h-3.5" />}
         </button>
       </aside>
+
+      <Modal open={!!switchTarget} onClose={() => setSwitchTarget(null)} title="Confirm account switch" size="sm">
+        {switchTarget && (
+          <form onSubmit={confirmSwitch} className="space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0"
+                style={{ backgroundColor: ROLE_ACCENT[switchTarget.role] || '#5A8AA6' }}>
+                {switchTarget.avatar}
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-h-text truncate">{switchTarget.name}</p>
+                <p className="text-xs text-h-text-muted truncate">{ROLES[switchTarget.role]}</p>
+              </div>
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-h-text mb-1.5">Password</label>
+              <input
+                type="password"
+                autoFocus
+                value={switchPassword}
+                onChange={e => { setSwitchPassword(e.target.value); setSwitchError(''); }}
+                className="input-field"
+                placeholder="Enter password to confirm"
+              />
+              {switchError && <p className="text-xs text-h-red mt-1.5">{switchError}</p>}
+            </div>
+            <div className="flex gap-2 pt-1">
+              <button type="button" onClick={() => setSwitchTarget(null)} className="btn-secondary flex-1">Cancel</button>
+              <button type="submit" className="btn-primary flex-1">Confirm switch</button>
+            </div>
+          </form>
+        )}
+      </Modal>
     </>
   );
 }
