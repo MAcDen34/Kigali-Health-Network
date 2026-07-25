@@ -1,6 +1,6 @@
 import uuid
 import bcrypt
-from sqlalchemy import Column, String, Date, ForeignKey, DateTime, ARRAY
+from sqlalchemy import Column, String, Date, ForeignKey, DateTime, ARRAY, Boolean
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.sql import func
 from .database import Base
@@ -16,6 +16,7 @@ class Patient(Base):
     allergies = Column(ARRAY(String), default=[])
     email = Column(String, unique=True, nullable=True)
     password_hash = Column(String, nullable=True)
+    active = Column(Boolean, default=True, nullable=False)
 
     def set_password(self, plain: str):
         self.password_hash = bcrypt.hashpw(plain.encode(), bcrypt.gensalt()).decode()
