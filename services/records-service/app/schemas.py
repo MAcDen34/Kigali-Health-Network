@@ -4,6 +4,7 @@ from datetime import date, datetime
 from typing import Optional
 
 class PatientCreate(BaseModel):
+    full_name: str
     national_id: str
     dob: date
     blood_group: Optional[str] = None

@@ -10,6 +10,7 @@ class Patient(Base):
     __table_args__ = {"schema": "records"}
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    full_name = Column(String, nullable=True)
     national_id = Column(String, unique=True, nullable=False)
     dob = Column(Date, nullable=False)
     blood_group = Column(String)

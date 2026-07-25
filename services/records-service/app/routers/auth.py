@@ -24,6 +24,7 @@ class LoginResponse(BaseModel):
 
 
 class RegisterRequest(BaseModel):
+    full_name: str
     national_id: str
     dob: date
     blood_group: Optional[str] = None
@@ -48,6 +49,7 @@ def register(payload: RegisterRequest, db: Session = Depends(get_db)):
         raise HTTPException(status_code=409, detail="An account with this national ID already exists.")
 
     patient = models.Patient(
+        full_name=payload.full_name,
         national_id=payload.national_id,
         dob=payload.dob,
         blood_group=payload.blood_group,
@@ -60,7 +62,7 @@ def register(payload: RegisterRequest, db: Session = Depends(get_db)):
     db.refresh(patient)
 
     token = create_access_token(str(patient.id))
-    return LoginResponse(access_token=token, patient_id=str(patient.id), name=None)
+    return LoginResponse(access_token=token, patient_id=str(patient.id), name=patient.full_name)
 
 
 @router.post("/login", response_model=LoginResponse)
@@ -73,7 +75,7 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)):
         raise HTTPException(status_code=401, detail="Invalid email or password")
 
     token = create_access_token(str(patient.id))
-    return LoginResponse(access_token=token, patient_id=str(patient.id), name=None)
+    return LoginResponse(access_token=token, patient_id=str(patient.id), name=patient.full_name)
 
 
 @router.delete("/me")
