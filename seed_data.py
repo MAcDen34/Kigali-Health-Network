@@ -13,9 +13,10 @@ All actual credentials (emails and passwords) are read from your local
 .env file — none are hardcoded here, so this file is safe to commit.
 Copy .env.example to .env and fill in real values before running this.
 
-Safe to re-run — every insert uses ON CONFLICT DO NOTHING, so running
-this twice just does nothing the second time instead of erroring out.
+Safe to re-run  every insert uses ON CONFLICT DO NOTHING, so running
+this twice just does nothing the second time instead of erroring out teh system.
 """
+
 
 import os
 import subprocess
