@@ -1,17 +1,17 @@
+version: "3.9"
 services:
   postgres:
     image: postgres:16
     environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: kuprin
+      POSTGRES_PASSWORD: kuprin_dev
+      POSTGRES_DB: kuprin
     ports:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
-      - ./db-init:/docker-entrypoint-initdb.d
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      test: ["CMD-SHELL", "pg_isready -U kuprin -d kuprin"]
       interval: 5s
       timeout: 3s
       retries: 5
@@ -27,9 +27,8 @@ services:
     ports:
       - "8000:8000"
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      DATABASE_URL: postgresql://kuprin:kuprin_dev@postgres:5432/kuprin
       REDIS_URL: redis://redis:6379
-      JWT_SECRET: ${JWT_SECRET}
     depends_on:
       postgres:
         condition: service_healthy
@@ -43,9 +42,9 @@ services:
     ports:
       - "8001:8001"
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      DATABASE_URL: postgresql://kuprin:kuprin_dev@postgres:5432/kuprin
       REDIS_URL: redis://redis:6379
-      JWT_SECRET: ${JWT_SECRET}
+      JWT_SECRET: "960ff9467b8635b47fac30876f4d377e750d501b7686cc3401de8d9af6d540bb"
       RECORDS_SERVICE_URL: http://records-service:8000
     depends_on:
       - postgres
@@ -58,7 +57,7 @@ services:
     ports:
       - "8002:8002"
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      DATABASE_URL: postgresql://kuprin:kuprin_dev@postgres:5432/kuprin
       REDIS_URL: redis://redis:6379
     depends_on:
       - postgres
@@ -71,9 +70,9 @@ services:
     ports:
       - "8004:8004"
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      DATABASE_URL: postgresql://kuprin:kuprin_dev@postgres:5432/kuprin
       REDIS_URL: redis://redis:6379
-      JWT_SECRET: ${JWT_SECRET}
+      JWT_SECRET: "960ff9467b8635b47fac30876f4d377e750d501b7686cc3401de8d9af6d540bb"
     depends_on:
       - postgres
       - redis
@@ -85,7 +84,7 @@ services:
     ports:
       - "8005:8005"
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      DATABASE_URL: postgresql://kuprin:kuprin_dev@postgres:5432/kuprin
       REDIS_URL: redis://redis:6379
     depends_on:
       - postgres
