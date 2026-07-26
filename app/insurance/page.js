@@ -6,25 +6,44 @@ import Badge from '@/components/ui/Badge';
 import KPICard from '@/components/ui/KPICard';
 import { CheckCircle2, XCircle, Banknote, Clock3, Filter } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { listClaims, updateClaimStatus, listPatients } from '@/lib/api';
 
 const STATUS = {
   pending:  { tone:'amber', label:'Pending',  chartColor:'rgb(var(--color-h-amber))' },
   approved: { tone:'blue',  label:'Approved', chartColor:'rgb(var(--color-h-blue))'  },
   paid:     { tone:'green', label:'Paid',     chartColor:'rgb(var(--color-h-green))' },
-  rejected: { tone:'red',   label:'Rejected', chartColor:'rgb(var(--color-h-red))'   },
+  denied:   { tone:'red',   label:'Denied',   chartColor:'rgb(var(--color-h-red))'   },
 };
 
 export default function InsurancePage() {
-  const { state, dispatch } = useApp();
-  const { claims } = state;
+  const { state } = useApp();
+  const { user } = state;
+  const [claims, setClaims] = useState([]);
+  const [patientMap, setPatientMap] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [refreshKey, setRefreshKey] = useState(0);
   const [filter, setFilter] = useState('all');
   const [highlightClaimId, setHighlightClaimId] = useState(null);
   const searchParams = useSearchParams();
 
-  // Deep-linked from header search: clear filter, scroll into view, flash.
+  useEffect(() => {
+    if (!user?.token) return;
+    Promise.all([listClaims(user.token), listPatients(user.token)])
+      .then(([claimData, patients]) => {
+        setClaims(claimData);
+        setPatientMap(Object.fromEntries(patients.map(p => [p.id, p.full_name])));
+        setLoading(false);
+      })
+      .catch(err => {
+        setError(err.message);
+        setLoading(false);
+      });
+  }, [user?.token, refreshKey]);
+
   useEffect(() => {
     const claimId = searchParams.get('claim');
-    if (!claimId) return;
+    if (!claimId || claims.length === 0) return;
     const match = claims.find(c => c.id === claimId);
     if (!match) return;
     setFilter('all');
@@ -36,17 +55,28 @@ export default function InsurancePage() {
     return () => clearTimeout(t);
   }, [searchParams, claims]);
 
-  const update = (id, status) => dispatch({ type:'UPDATE_CLAIM', payload:{ id, status }});
+  const update = async (id, status) => {
+    try {
+      await updateClaimStatus(id, status, user.token);
+      setRefreshKey(k => k + 1);
+    } catch (err) {
+      setError(err.message);
+    }
+  };
 
+  if (loading) return <p className="text-sm text-h-text-muted">Loading claims...</p>;
+  if (error) return <p className="text-sm text-red-500">Error: {error}</p>;
+
+  const amountOf = (c) => Number(c.amount || 0);
   const list = filter === 'all' ? claims : claims.filter(c => c.status === filter);
   const pending = claims.filter(c => c.status === 'pending').length;
   const paid = claims.filter(c => c.status === 'paid').length;
-  const totalPending = claims.filter(c => c.status === 'pending').reduce((s,c) => s + c.amount, 0);
+  const totalPending = claims.filter(c => c.status === 'pending').reduce((s,c) => s + amountOf(c), 0);
 
   const chartData = Object.keys(STATUS).map(key => ({
     key,
     label: STATUS[key].label,
-    amount: claims.filter(c => c.status === key).reduce((s, c) => s + c.amount, 0),
+    amount: claims.filter(c => c.status === key).reduce((s, c) => s + amountOf(c), 0),
   }));
 
   return (
@@ -89,7 +119,7 @@ export default function InsurancePage() {
       <div className="card p-5">
         <div className="flex items-center gap-2 mb-5 flex-wrap">
           <Filter className="w-4 h-4 text-h-text-muted" />
-          {['all','pending','approved','paid','rejected'].map(f => (
+          {['all','pending','approved','paid','denied'].map(f => (
             <button key={f} onClick={() => setFilter(f)}
               className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors capitalize ${
                 filter === f ? 'bg-h-blue text-white' : 'bg-h-bg text-h-text-muted hover:text-h-text border border-h-border'
@@ -98,11 +128,14 @@ export default function InsurancePage() {
           <span className="ml-auto text-xs text-h-text-muted">{list.length} claims</span>
         </div>
 
+        {list.length === 0 ? (
+          <p className="text-sm text-h-text-muted py-8 text-center">No claims yet.</p>
+        ) : (
         <div className="overflow-x-auto -mx-5">
           <table className="w-full text-sm min-w-[680px]">
             <thead>
               <tr className="text-left text-xs text-h-text-muted uppercase tracking-wide border-b border-h-border">
-                {['Claim ID','Patient','Institution','Diag. Code','Service','Amount','Status','Action'].map(h => (
+                {['Claim ID','Patient','Diag. Code','Service','Amount','Status','Action'].map(h => (
                   <th key={h} className="px-5 py-3 font-semibold">{h}</th>
                 ))}
               </tr>
@@ -113,12 +146,11 @@ export default function InsurancePage() {
                   className={`border-b border-h-border last:border-0 transition-colors duration-700 ${
                     highlightClaimId === c.id ? 'bg-h-bg' : 'hover:bg-h-bg'
                   }`}>
-                  <td className="px-5 py-3.5 font-mono text-xs text-h-text-muted">{c.id}</td>
-                  <td className="px-5 py-3.5 text-h-text font-semibold">{c.patient}</td>
-                  <td className="px-5 py-3.5 text-h-text-muted text-xs">{c.institution}</td>
-                  <td className="px-5 py-3.5 font-mono text-xs text-h-blue">{c.diagCode}</td>
-                  <td className="px-5 py-3.5 text-h-text-muted text-xs">{c.service}</td>
-                  <td className="px-5 py-3.5 text-h-text font-semibold">RWF {c.amount.toLocaleString()}</td>
+                  <td className="px-5 py-3.5 font-mono text-xs text-h-text-muted">{c.id.slice(0, 8)}</td>
+                  <td className="px-5 py-3.5 text-h-text font-semibold">{patientMap[c.patient_id] || 'Unknown'}</td>
+                  <td className="px-5 py-3.5 font-mono text-xs text-h-blue">{c.diagnosis_code || '—'}</td>
+                  <td className="px-5 py-3.5 text-h-text-muted text-xs">{c.service_description || '—'}</td>
+                  <td className="px-5 py-3.5 text-h-text font-semibold">RWF {amountOf(c).toLocaleString()}</td>
                   <td className="px-5 py-3.5">
                     <Badge tone={STATUS[c.status]?.tone || 'gray'}>{STATUS[c.status]?.label || c.status}</Badge>
                   </td>
@@ -130,9 +162,9 @@ export default function InsurancePage() {
                           <CheckCircle2 className="w-3.5 h-3.5" /> Approve
                         </button>
                         <span className="text-h-border">|</span>
-                        <button onClick={() => update(c.id,'rejected')}
+                        <button onClick={() => update(c.id,'denied')}
                           className="flex items-center gap-1 text-xs font-semibold text-h-red hover:opacity-75 transition-opacity">
-                          <XCircle className="w-3.5 h-3.5" /> Reject
+                          <XCircle className="w-3.5 h-3.5" /> Deny
                         </button>
                       </div>
                     )}
@@ -142,7 +174,7 @@ export default function InsurancePage() {
                         <Banknote className="w-3.5 h-3.5" /> Mark paid
                       </button>
                     )}
-                    {(c.status === 'paid' || c.status === 'rejected') && (
+                    {(c.status === 'paid' || c.status === 'denied') && (
                       <span className="text-xs text-h-text-light">—</span>
                     )}
                   </td>
@@ -151,6 +183,7 @@ export default function InsurancePage() {
             </tbody>
           </table>
         </div>
+        )}
       </div>
     </div>
   );
