@@ -101,8 +101,8 @@ def main():
         ON CONFLICT (id) DO UPDATE SET full_name = EXCLUDED.full_name;""",
 
         f"""INSERT INTO records.consent_grants (id, patient_id, institution_id, granted_at)
-        SELECT gen_random_uuid(), '{PATIENT_ID}', '{INSTITUTION_ID}', now()
-        WHERE NOT EXISTS (SELECT 1 FROM records.consent_grants WHERE patient_id = '{PATIENT_ID}' AND institution_id = '{INSTITUTION_ID}' AND revoked_at IS NULL);""",
+        SELECT gen_random_uuid(), '{PATIENT_ID}', '{HOSPITAL_ID}', now()
+        WHERE NOT EXISTS (SELECT 1 FROM records.consent_grants WHERE patient_id = '{PATIENT_ID}' AND institution_id = '{HOSPITAL_ID}' AND revoked_at IS NULL);""",
 
         f"""INSERT INTO records.medical_records (id, patient_id, type, content)
         SELECT gen_random_uuid(), '{PATIENT_ID}', 'Diagnosis', '{{"icd_code": "I10", "detail": "Hypertension — Stage 1", "institution": "King Faisal Hospital", "doctor": "Dr. Mugisha Eric"}}'::jsonb
@@ -128,15 +128,15 @@ def main():
         VALUES ('{pid}', '{name}', '{national_id}', '{dob}', '{blood_group}', ARRAY[]::text[])
         ON CONFLICT (id) DO UPDATE SET full_name = EXCLUDED.full_name;""")
         sql_parts.append(f"""INSERT INTO records.consent_grants (id, patient_id, institution_id, granted_at)
-        SELECT gen_random_uuid(), '{pid}', '{INSTITUTION_ID}', now()
-        WHERE NOT EXISTS (SELECT 1 FROM records.consent_grants WHERE patient_id = '{pid}' AND institution_id = '{INSTITUTION_ID}' AND revoked_at IS NULL);""")
+        SELECT gen_random_uuid(), '{pid}', '{HOSPITAL_ID}', now()
+        WHERE NOT EXISTS (SELECT 1 FROM records.consent_grants WHERE patient_id = '{pid}' AND institution_id = '{HOSPITAL_ID}' AND revoked_at IS NULL);""")
 
     for _, role, name, email, _, inst_id in staff_accounts:
         h = staff_hashes[email]
         inst_sql = f"'{inst_id}'" if inst_id else "NULL"
         sql_parts.append(f"""INSERT INTO admin.staff (id, full_name, email, password_hash, role, institution_id, active)
         VALUES (gen_random_uuid(), '{name}', '{email}', '{h}', '{role}', {inst_sql}, true)
-        ON CONFLICT (email) DO NOTHING;""")
+        ON CONFLICT (email) DO UPDATE SET institution_id = EXCLUDED.institution_id;""")
 
     full_sql = "\n".join(sql_parts)
     print("Running seed SQL...")

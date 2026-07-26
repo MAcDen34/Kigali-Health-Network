@@ -14,6 +14,7 @@ export async function loginWithCredentials(email, password) {
       role: staffResult.role,
       avatar: initials(staffResult.name || email),
       institution: staffResult.institution || null,
+      institutionId: staffResult.institution_id || null,
       token: staffResult.access_token,
     };
   }
@@ -27,6 +28,7 @@ export async function loginWithCredentials(email, password) {
       role: patientResult.role,
       avatar: initials(patientResult.name || 'Patient'),
       institution: null,
+      institutionId: null,
       token: patientResult.access_token,
     };
   }
