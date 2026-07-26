@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .database import Base, engine
-from .routers import consent, patients, medical_records, auth
+from .routers import consent, patients, medical_records, auth, audit
 
 app = FastAPI(title="Records & Consent Service")
 
@@ -21,6 +21,7 @@ app.include_router(consent.router)
 app.include_router(patients.router)
 app.include_router(medical_records.router)
 app.include_router(auth.router)
+app.include_router(audit.router)
 
 @app.get("/health")
 def health():

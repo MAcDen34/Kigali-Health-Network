@@ -1,11 +1,12 @@
+import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .database import Base, engine
-from .routers import institutions, staff, audit, auth, health
+from .routers import claims
 
 app = FastAPI(
-    title="Admin & Platform Service",
-    description="Institution onboarding, staff management, API tokens, and platform audit for KUPRIN.",
+    title="Insurance Service",
+    description="Claims and coverage pre-validation for KUPRIN.",
     version="1.0.0",
 )
 
@@ -20,13 +21,12 @@ app.add_middleware(
 @app.on_event("startup")
 def startup():
     Base.metadata.create_all(bind=engine)
+    if os.getenv("DISABLE_CONSUMER") != "1":
+        from .consumer import start_consumer_thread
+        start_consumer_thread()
 
-app.include_router(institutions.router)
-app.include_router(staff.router)
-app.include_router(audit.router)
-app.include_router(auth.router)
-app.include_router(health.router)
+app.include_router(claims.router)
 
 @app.get("/health")
 def health():
-    return {"status": "ok", "service": "admin-service"}
+    return {"status": "ok", "service": "insurance-service"}

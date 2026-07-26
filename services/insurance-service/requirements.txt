@@ -6,5 +6,6 @@ pydantic
 alembic
 pytest
 httpx
-redis
 PyJWT
+bcrypt
+redis

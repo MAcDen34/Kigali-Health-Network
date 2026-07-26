@@ -1,22 +1,54 @@
 'use client';
+import { useState, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
 import { ROLES, ROLE_ACCENT } from '@/data/roles';
 import KPICard from '@/components/ui/KPICard';
 import Badge from '@/components/ui/Badge';
 import { Activity, ArrowRight, ShieldCheck, ShieldOff, AlertTriangle, CheckCircle2, Pill } from 'lucide-react';
 import Link from 'next/link';
+import { listMyConsents, listMyMedicalRecords, listMyAuditLog, listInstitutions, listAuditEvents, checkServicesHealth, listPatients, checkConsent, listAllPrescriptions, listAllInteractionFlags, listClaims } from '@/lib/api';
+
+const INSTITUTION_NAMES = {
+  '55555555-5555-5555-5555-555555555555': 'King Faisal Hospital',
+  '66666666-6666-6666-6666-666666666666': 'King Faisal Hospital',
+  '77777777-7777-7777-7777-777777777777': 'Legacy Clinic — Remera',
+};
 
 function PatientDashboard({ state }) {
-  const { consents, medicalHistory: allHistory, auditLog, patientProfile } = state;
-  const medicalHistory = allHistory.filter(m => m.patient === patientProfile.name);
-  const active = consents.filter(c => c.status === 'active').length;
+  const patientId = state.user?.id;
+  const token = state.user?.token;
+  const [consents, setConsents] = useState([]);
+  const [medicalHistory, setMedicalHistory] = useState([]);
+  const [auditLog, setAuditLog] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!patientId || !token) return;
+    Promise.all([
+      listMyConsents(patientId, token),
+      listMyMedicalRecords(patientId, token),
+      listMyAuditLog(patientId, token),
+    ])
+      .then(([consentData, historyData, auditData]) => {
+        setConsents(consentData);
+        setMedicalHistory(historyData);
+        setAuditLog(auditData);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, [patientId, token]);
+
+  if (loading) return <p className="text-sm text-h-text-muted">Loading your dashboard...</p>;
+
+  const active = consents.filter(c => !c.revoked_at).length;
+
   return (
     <>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <KPICard title="Active consents"   value={active}                         icon="ShieldCheck"   color="teal"   />
-        <KPICard title="Medical records"   value={medicalHistory.length}          icon="FileText"      color="blue"   />
-        <KPICard title="Allergies on file" value={patientProfile.allergies.length}icon="AlertTriangle" color="amber"  />
-        <KPICard title="Access events"     value={auditLog.length} subtitle="Last 30 days" icon="Eye" color="purple" />
+        <KPICard title="Active consents"   value={active}                icon="ShieldCheck"   color="teal"   />
+        <KPICard title="Medical records"   value={medicalHistory.length} icon="FileText"      color="blue"   />
+        <KPICard title="Allergies on file" value={state.user?.allergies?.length || 0} icon="AlertTriangle" color="amber"  />
+        <KPICard title="Access events"     value={auditLog.length} subtitle="All time" icon="Eye" color="purple" />
       </div>
       <div className="grid lg:grid-cols-2 gap-5">
         <div className="card p-5">
@@ -27,32 +59,37 @@ function PatientDashboard({ state }) {
             </Link>
           </div>
           <div className="space-y-2.5">
-            {consents.map(c => (
-              <div key={c.id} className="flex items-center justify-between py-2.5 border-b border-h-border last:border-0">
-                <div>
-                  <p className="text-sm font-medium text-h-text">{c.institution}</p>
-                  <p className="text-xs text-h-text-muted">{c.type} · Granted {c.grantedAt}</p>
+            {consents.length === 0 && <p className="text-sm text-h-text-muted">No consent grants yet.</p>}
+            {consents.map(c => {
+              const isActive = !c.revoked_at;
+              return (
+                <div key={c.id} className="flex items-center justify-between py-2.5 border-b border-h-border last:border-0">
+                  <div>
+                    <p className="text-sm font-medium text-h-text">{INSTITUTION_NAMES[c.institution_id] || c.institution_id}</p>
+                    <p className="text-xs text-h-text-muted">Granted {new Date(c.granted_at).toLocaleDateString()}</p>
+                  </div>
+                  <Badge tone={isActive ? 'green' : 'gray'}>
+                    {isActive ? 'Active' : 'Revoked'}
+                  </Badge>
                 </div>
-                <Badge tone={c.status === 'active' ? 'green' : 'gray'}>
-                  {c.status === 'active' ? 'Active' : 'Revoked'}
-                </Badge>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
         <div className="card p-5">
           <h3 className="section-title">Recent access log</h3>
           <div className="space-y-3">
+            {auditLog.length === 0 && <p className="text-sm text-h-text-muted">No access events yet.</p>}
             {auditLog.slice(0, 4).map(a => (
               <div key={a.id} className="flex items-start gap-3">
                 <div className="w-7 h-7 rounded-full bg-h-bg flex items-center justify-center flex-shrink-0 mt-0.5">
                   <Activity className="w-3.5 h-3.5 text-h-text-muted" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm text-h-text font-medium truncate">{a.actor}</p>
+                  <p className="text-sm text-h-text font-medium truncate">{a.actor_id === patientId ? 'You' : a.actor_id}</p>
                   <p className="text-xs text-h-text-muted truncate">{a.action}</p>
                 </div>
-                <span className="text-[11px] text-h-text-light flex-shrink-0">{a.timestamp.split(' ')[1]}</span>
+                <span className="text-[11px] text-h-text-light flex-shrink-0">{new Date(a.timestamp).toLocaleTimeString()}</span>
               </div>
             ))}
           </div>
@@ -63,62 +100,91 @@ function PatientDashboard({ state }) {
 }
 
 function ClinicDashboard({ state }) {
-  const { clinicPatients, prescriptions } = state;
-  const consented = clinicPatients.filter(p => p.consent).length;
-  const flagged = prescriptions.filter(p => p.flag).length;
+  const { user } = state;
+  const [patients, setPatients] = useState([]);
+  const [consentMap, setConsentMap] = useState({});
+  const [prescriptions, setPrescriptions] = useState([]);
+  const [flagCount, setFlagCount] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!user?.token || !user?.institutionId) return;
+    Promise.all([listPatients(user.token), listAllPrescriptions(user.token), listAllInteractionFlags(user.token)])
+      .then(async ([list, rx, flags]) => {
+        setPrescriptions(rx);
+        setFlagCount(flags.length);
+        const entries = await Promise.all(
+          list.map(async (p) => [p.id, await checkConsent(p.id, user.institutionId, user.token).catch(() => null)])
+        );
+        setPatients(list);
+        setConsentMap(Object.fromEntries(entries));
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, [user?.token, user?.institutionId]);
+
+  if (loading) return <p className="text-sm text-h-text-muted">Loading clinic summary...</p>;
+
+  const consented = patients.filter(p => consentMap[p.id]).length;
+
   return (
     <>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <KPICard title="Patients today"    value={clinicPatients.length}  icon="Users"          color="blue"  />
-        <KPICard title="Consent granted"   value={consented}              icon="ShieldCheck"    color="teal"  />
-        <KPICard title="Prescriptions"     value={prescriptions.length}   icon="Pill"           color="green" />
-        <KPICard title="Interaction flags" value={flagged}                icon="AlertTriangle"  color="amber" />
+        <KPICard title="Patients today"    value={patients.length}       icon="Users"          color="blue"  />
+        <KPICard title="Consent granted"   value={consented}             icon="ShieldCheck"    color="teal"  />
+        <KPICard title="Prescriptions"     value={prescriptions.length}  icon="Pill"           color="green" />
+        <KPICard title="Interaction flags" value={flagCount}             icon="AlertTriangle"  color="amber" />
       </div>
-      <div className="grid lg:grid-cols-2 gap-5">
-        <div className="card p-5">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="section-title mb-0">Patient list</h3>
-            <Link href="/clinic" className="text-xs font-semibold text-h-blue flex items-center gap-1 hover:gap-2 transition-all">
-              Open clinic <ArrowRight className="w-3.5 h-3.5" />
-            </Link>
-          </div>
-          {clinicPatients.slice(0, 4).map(p => (
-            <div key={p.id} className="flex items-center justify-between py-2.5 border-b border-h-border last:border-0">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-h-blue-light text-h-blue text-xs font-bold flex items-center justify-center">
-                  {p.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-h-text">{p.name}</p>
-                  <p className="text-xs text-h-text-muted">Age {p.age} · {p.lastVisit}</p>
-                </div>
-              </div>
-              <Badge tone={p.consent ? 'green' : 'red'}>{p.consent ? 'Consented' : 'Blocked'}</Badge>
-            </div>
-          ))}
+      <div className="card p-5">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="section-title mb-0">Patient list</h3>
+          <Link href="/clinic" className="text-xs font-semibold text-h-blue flex items-center gap-1 hover:gap-2 transition-all">
+            Open clinic <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
         </div>
-        <div className="card p-5">
-          <h3 className="section-title">Active prescriptions</h3>
-          {prescriptions.filter(rx => rx.status === 'active').map(rx => (
-            <div key={rx.id} className="flex items-center justify-between py-2.5 border-b border-h-border last:border-0">
+        {patients.slice(0, 4).map(p => (
+          <div key={p.id} className="flex items-center justify-between py-2.5 border-b border-h-border last:border-0">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-h-blue-light text-h-blue text-xs font-bold flex items-center justify-center">
+                {(p.full_name || '?').split(' ').map(n => n[0]).join('').slice(0, 2)}
+              </div>
               <div>
-                <p className="text-sm font-medium text-h-text">{rx.drug}</p>
-                <p className="text-xs text-h-text-muted">{rx.patient} · {rx.dosage}</p>
+                <p className="text-sm font-medium text-h-text">{p.full_name}</p>
+                <p className="text-xs text-h-text-muted">DOB {p.dob}</p>
               </div>
-              {rx.flag ? <Badge tone="red">{rx.flag}</Badge> : <Badge tone="green">Clear</Badge>}
             </div>
-          ))}
-        </div>
+            <Badge tone={consentMap[p.id] ? 'green' : 'red'}>{consentMap[p.id] ? 'Consented' : 'Blocked'}</Badge>
+          </div>
+        ))}
       </div>
     </>
   );
 }
 
 function PharmacyDashboard({ state }) {
-  const { prescriptions } = state;
+  const { user } = state;
+  const [prescriptions, setPrescriptions] = useState([]);
+  const [flagMap, setFlagMap] = useState({});
+  const [patientMap, setPatientMap] = useState({});
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    Promise.all([listAllPrescriptions(user.token), listAllInteractionFlags(user.token), listPatients(user.token)])
+      .then(([rx, flags, patients]) => {
+        setPrescriptions(rx);
+        setFlagMap(Object.fromEntries(flags.map(f => [f.prescription_id, f])));
+        setPatientMap(Object.fromEntries(patients.map(p => [p.id, p.full_name])));
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, []);
+
+  if (loading) return <p className="text-sm text-h-text-muted">Loading pharmacy summary...</p>;
+
   const pending = prescriptions.filter(rx => rx.status !== 'dispensed').length;
-  const flagged = prescriptions.filter(rx => rx.flag).length;
+  const flagged = prescriptions.filter(rx => flagMap[rx.id]).length;
   const dispensed = prescriptions.length - pending;
+
   return (
     <>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -135,18 +201,21 @@ function PharmacyDashboard({ state }) {
           </Link>
         </div>
         <div className="space-y-2.5">
-          {prescriptions.slice(0, 5).map(rx => (
-            <div key={rx.id} className={`flex items-center justify-between rounded-xl border px-4 py-3 ${rx.flag ? 'border-h-red/25 bg-h-red-light/40' : 'border-h-border'}`}>
-              <div>
-                <p className="text-sm font-semibold text-h-text">{rx.drug}</p>
-                <p className="text-xs text-h-text-muted">{rx.patient} · {rx.code}</p>
+          {prescriptions.slice(0, 5).map(rx => {
+            const flag = flagMap[rx.id];
+            return (
+              <div key={rx.id} className={`flex items-center justify-between rounded-xl border px-4 py-3 ${flag ? 'border-h-red/25 bg-h-red-light/40' : 'border-h-border'}`}>
+                <div>
+                  <p className="text-sm font-semibold text-h-text">{rx.drug_code}</p>
+                  <p className="text-xs text-h-text-muted">{patientMap[rx.record_id] || 'Unknown'} · {rx.dosage}</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  {flag && <Badge tone="red">Interaction</Badge>}
+                  <Badge tone={rx.status === 'dispensed' ? 'green' : 'blue'}>{rx.status}</Badge>
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                {rx.flag && <Badge tone="red">{rx.flag === 'interaction' ? 'Interaction' : 'Allergy'}</Badge>}
-                <Badge tone={rx.status === 'dispensed' ? 'green' : rx.status === 'flagged' ? 'red' : 'blue'}>{rx.status}</Badge>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </>
@@ -154,10 +223,29 @@ function PharmacyDashboard({ state }) {
 }
 
 function InsuranceDashboard({ state }) {
-  const { claims } = state;
+  const { user } = state;
+  const [claims, setClaims] = useState([]);
+  const [patientMap, setPatientMap] = useState({});
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!user?.token) return;
+    Promise.all([listClaims(user.token), listPatients(user.token)])
+      .then(([claimData, patients]) => {
+        setClaims(claimData);
+        setPatientMap(Object.fromEntries(patients.map(p => [p.id, p.full_name])));
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, [user?.token]);
+
+  if (loading) return <p className="text-sm text-h-text-muted">Loading claims summary...</p>;
+
+  const amountOf = (c) => Number(c.amount || 0);
   const pending = claims.filter(c => c.status === 'pending').length;
   const paid = claims.filter(c => c.status === 'paid').length;
-  const total = claims.reduce((s, c) => s + c.amount, 0);
+  const total = claims.reduce((s, c) => s + amountOf(c), 0);
+
   return (
     <>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -173,6 +261,9 @@ function InsuranceDashboard({ state }) {
             Manage all <ArrowRight className="w-3.5 h-3.5" />
           </Link>
         </div>
+        {claims.length === 0 ? (
+          <p className="text-sm text-h-text-muted">No claims yet.</p>
+        ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
@@ -184,13 +275,13 @@ function InsuranceDashboard({ state }) {
               </tr>
             </thead>
             <tbody>
-              {claims.map(c => (
+              {claims.slice(0, 5).map(c => (
                 <tr key={c.id} className="border-b border-h-border last:border-0">
-                  <td className="py-3 font-mono text-xs text-h-text-muted">{c.id}</td>
-                  <td className="py-3 text-h-text font-medium">{c.patient}</td>
-                  <td className="py-3 text-h-text">RWF {c.amount.toLocaleString()}</td>
+                  <td className="py-3 font-mono text-xs text-h-text-muted">{c.id.slice(0, 8)}</td>
+                  <td className="py-3 text-h-text font-medium">{patientMap[c.patient_id] || 'Unknown'}</td>
+                  <td className="py-3 text-h-text">RWF {amountOf(c).toLocaleString()}</td>
                   <td className="py-3">
-                    <Badge tone={c.status === 'paid' ? 'green' : c.status === 'approved' ? 'blue' : c.status === 'rejected' ? 'red' : 'amber'}>
+                    <Badge tone={c.status === 'paid' ? 'green' : c.status === 'approved' ? 'blue' : c.status === 'denied' ? 'red' : 'amber'}>
                       {c.status[0].toUpperCase() + c.status.slice(1)}
                     </Badge>
                   </td>
@@ -199,15 +290,40 @@ function InsuranceDashboard({ state }) {
             </tbody>
           </table>
         </div>
+        )}
       </div>
     </>
   );
 }
 
 function AdminDashboard({ state }) {
-  const { institutions, serviceHealth, platformAudit } = state;
+  const token = state.user?.token;
+  const [institutions, setInstitutions] = useState([]);
+  const [platformAudit, setPlatformAudit] = useState([]);
+  const [serviceHealth, setServiceHealth] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!token) return;
+    Promise.all([
+      listInstitutions(token),
+      listAuditEvents(token),
+      checkServicesHealth(token),
+    ])
+      .then(([inst, audit, health]) => {
+        setInstitutions(inst);
+        setPlatformAudit(audit);
+        setServiceHealth(health.map(h => ({ ...h, name: h.service })));
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, [token]);
+
+  if (loading) return <p className="text-sm text-h-text-muted">Loading platform data...</p>;
+
   const healthy = serviceHealth.filter(s => s.status === 'healthy').length;
-  const pending = institutions.filter(i => i.status === 'pending').length;
+  const pending = institutions.filter(i => !i.active).length;
+
   return (
     <>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -242,16 +358,17 @@ function AdminDashboard({ state }) {
         </div>
         <div className="card p-5">
           <h3 className="section-title">Platform audit</h3>
+          {platformAudit.length === 0 && <p className="text-sm text-h-text-muted">No audit events yet.</p>}
           {platformAudit.slice(0, 4).map(a => (
             <div key={a.id} className="flex items-start gap-3 py-2.5 border-b border-h-border last:border-0">
               <div className="w-7 h-7 rounded-full bg-h-bg flex items-center justify-center flex-shrink-0 mt-0.5">
                 <Activity className="w-3.5 h-3.5 text-h-text-muted" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-h-text truncate">{a.actor}</p>
+                <p className="text-sm font-medium text-h-text truncate">{a.actor_name || 'Unknown'}</p>
                 <p className="text-xs text-h-text-muted truncate">{a.action}</p>
               </div>
-              <span className="text-[11px] text-h-text-light flex-shrink-0 whitespace-nowrap">{a.timestamp.split(' ')[1]}</span>
+              <span className="text-[11px] text-h-text-light flex-shrink-0 whitespace-nowrap">{new Date(a.timestamp).toLocaleTimeString()}</span>
             </div>
           ))}
         </div>
@@ -283,7 +400,6 @@ export default function DashboardPage() {
 
   return (
     <div className="animate-fade-in">
-      {/* Welcome banner */}
       <div className="rounded-2xl p-5 mb-6 relative overflow-hidden"
         style={{ background: `linear-gradient(135deg, ${accent}15 0%, ${accent}05 100%)`, border: `1px solid ${accent}25` }}>
         <div className="absolute -right-8 -top-8 w-32 h-32 rounded-full" style={{ backgroundColor: `${accent}08` }} />

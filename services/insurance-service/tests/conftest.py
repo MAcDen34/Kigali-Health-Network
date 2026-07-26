@@ -32,12 +32,13 @@ def client(db_session):
     app.dependency_overrides.clear()
 
 @pytest.fixture()
-def make_patient_token():
-    """Returns a function that builds a real, valid PATIENT-role JWT for a given patient ID."""
-    def _make(patient_id):
+def make_token():
+    """Returns a function that builds a real, valid JWT for a fake test actor."""
+    def _make(role="INSURANCE_AGENT", actor_id="11111111-1111-1111-1111-111111111111", institution_id="22222222-2222-2222-2222-222222222222"):
         payload = {
-            "sub": str(patient_id),
-            "role": "PATIENT",
+            "sub": actor_id,
+            "role": role,
+            "institution_id": institution_id,
             "exp": datetime.utcnow() + timedelta(minutes=30),
             "iat": datetime.utcnow(),
         }

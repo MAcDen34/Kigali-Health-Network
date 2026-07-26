@@ -60,6 +60,7 @@ services:
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       REDIS_URL: redis://redis:6379
+      JWT_SECRET: ${JWT_SECRET}
     depends_on:
       - postgres
       - redis
@@ -92,6 +93,20 @@ services:
       - redis
     volumes:
       - ./services/notification-service:/app
+
+  insurance-service:
+    build: ./services/insurance-service
+    ports:
+      - "8003:8003"
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: ${JWT_SECRET}
+    depends_on:
+      - postgres
+      - redis
+    volumes:
+      - ./services/insurance-service:/app
 
 volumes:
   pgdata:
