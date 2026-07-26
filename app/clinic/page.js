@@ -94,7 +94,7 @@ export default function ClinicPage() {
     Promise.all([
       listPatientDiagnoses(selected.id, user.token),
       listPatientVitals(selected.id, user.token),
-      listPatientPrescriptions(selected.id),
+      listPatientPrescriptions(selected.id, user.token),
     ])
       .then(([diagnoses, vitals, rx]) => {
         if (cancelled) return;

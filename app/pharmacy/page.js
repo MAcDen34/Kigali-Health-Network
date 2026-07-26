@@ -35,7 +35,7 @@ export default function PharmacyPage() {
   const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
-    Promise.all([listAllPrescriptions(), listAllInteractionFlags(), listPatients(user.token)])
+    Promise.all([listAllPrescriptions(user.token), listAllInteractionFlags(user.token), listPatients(user.token)])
       .then(([rx, flags, patients]) => {
         setPrescriptions(rx);
         setFlagMap(Object.fromEntries(flags.map(f => [f.prescription_id, f])));
@@ -64,7 +64,7 @@ export default function PharmacyPage() {
 
   const handleDispense = async (rxId) => {
     try {
-      await dispensePrescription(rxId, user.id);
+      await dispensePrescription(rxId, user.id, user.token);
       setRefreshKey(k => k + 1);
     } catch (err) {
       setError(err.message);

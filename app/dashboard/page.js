@@ -109,7 +109,7 @@ function ClinicDashboard({ state }) {
 
   useEffect(() => {
     if (!user?.token || !user?.institutionId) return;
-    Promise.all([listPatients(user.token), listAllPrescriptions(), listAllInteractionFlags()])
+    Promise.all([listPatients(user.token), listAllPrescriptions(user.token), listAllInteractionFlags(user.token)])
       .then(async ([list, rx, flags]) => {
         setPrescriptions(rx);
         setFlagCount(flags.length);
@@ -169,7 +169,7 @@ function PharmacyDashboard({ state }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    Promise.all([listAllPrescriptions(), listAllInteractionFlags(), listPatients(user.token)])
+    Promise.all([listAllPrescriptions(user.token), listAllInteractionFlags(user.token), listPatients(user.token)])
       .then(([rx, flags, patients]) => {
         setPrescriptions(rx);
         setFlagMap(Object.fromEntries(flags.map(f => [f.prescription_id, f])));
