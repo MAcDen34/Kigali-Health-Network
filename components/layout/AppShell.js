@@ -32,7 +32,8 @@ export default function AppShell({ children }) {
   }, [hydrated, user, pathname]);
 
   if (!hydrated && !isPublic) return null;
-  if (isPublic || !user) return <>{children}</>;
+  if (isPublic) return <>{children}</>;
+  if (!user) return null;
   if (!hasRouteAccess) return null;
 
   return (
