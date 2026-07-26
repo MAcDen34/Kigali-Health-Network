@@ -7,28 +7,52 @@ import Badge from '@/components/ui/Badge';
 import KPICard from '@/components/ui/KPICard';
 import { Search, AlertTriangle, CheckCircle2, Pill, Filter } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
+import { listAllPrescriptions, listAllInteractionFlags, listPatients, dispensePrescription } from '@/lib/api';
 
-const STATUS_TONE = { active:'blue', dispensed:'green', flagged:'red' };
+const STATUS_TONE = { pending:'blue', dispensed:'green' };
 const STATUS_CHART_COLOR = {
-  active:    'rgb(var(--color-h-blue))',
+  pending:   'rgb(var(--color-h-blue))',
   dispensed: 'rgb(var(--color-h-green))',
   flagged:   'rgb(var(--color-h-red))',
 };
 
 export default function PharmacyPage() {
-  const { state, dispatch } = useApp();
-  const { user, prescriptions } = state;
+  const { state } = useApp();
+  const { user } = state;
   const accent = ROLE_ACCENT[user?.role] || '#5A8AA6';
   const searchParams = useSearchParams();
   const [query, setQuery] = useState(() => searchParams.get('q') || '');
   const [highlightRxId, setHighlightRxId] = useState(null);
+  const [searchFocused, setSearchFocused] = useState(false);
+  const [filter, setFilter] = useState('all');
+  const [hoveredSlice, setHoveredSlice] = useState(null);
 
-  // Deep-linked from header search (matched by code): prefill, scroll, flash.
+  const [prescriptions, setPrescriptions] = useState([]);
+  const [patientMap, setPatientMap] = useState({});
+  const [flagMap, setFlagMap] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  useEffect(() => {
+    Promise.all([listAllPrescriptions(), listAllInteractionFlags(), listPatients()])
+      .then(([rx, flags, patients]) => {
+        setPrescriptions(rx);
+        setFlagMap(Object.fromEntries(flags.map(f => [f.prescription_id, f])));
+        setPatientMap(Object.fromEntries(patients.map(p => [p.id, p.full_name])));
+        setLoading(false);
+      })
+      .catch(err => {
+        setError(err.message);
+        setLoading(false);
+      });
+  }, [refreshKey]);
+
   useEffect(() => {
     const q = searchParams.get('q');
-    if (!q) return;
+    if (!q || prescriptions.length === 0) return;
     setQuery(q);
-    const match = prescriptions.find(rx => rx.code === q);
+    const match = prescriptions.find(rx => rx.drug_code === q);
     if (!match) return;
     setHighlightRxId(match.id);
     requestAnimationFrame(() => {
@@ -38,27 +62,36 @@ export default function PharmacyPage() {
     return () => clearTimeout(t);
   }, [searchParams, prescriptions]);
 
-  const [searchFocused, setSearchFocused] = useState(false);
-  const [filter, setFilter] = useState('all');
-  const [hoveredSlice, setHoveredSlice] = useState(null);
+  const handleDispense = async (rxId) => {
+    try {
+      await dispensePrescription(rxId, user.id);
+      setRefreshKey(k => k + 1);
+    } catch (err) {
+      setError(err.message);
+    }
+  };
 
-  const dispense = (id) => dispatch({ type: 'DISPENSE_RX', payload: id });
+  if (loading) return <p className="text-sm text-h-text-muted">Loading pharmacy queue...</p>;
+  if (error) return <p className="text-sm text-red-500">Error: {error}</p>;
 
   const list = prescriptions.filter(rx => {
-    const matchQ = rx.patient.toLowerCase().includes(query.toLowerCase()) ||
-      rx.drug.toLowerCase().includes(query.toLowerCase()) ||
-      rx.code.toLowerCase().includes(query.toLowerCase());
-    const matchF = filter === 'all' || rx.status === filter || (filter === 'flagged' && rx.flag);
+    const patientName = patientMap[rx.record_id] || '';
+    const matchQ = patientName.toLowerCase().includes(query.toLowerCase()) ||
+      rx.drug_code.toLowerCase().includes(query.toLowerCase());
+    const flagged = !!flagMap[rx.id];
+    const matchF = filter === 'all' || rx.status === filter || (filter === 'flagged' && flagged);
     return matchQ && matchF;
   });
 
   const pending = prescriptions.filter(rx => rx.status !== 'dispensed').length;
-  const flagged = prescriptions.filter(rx => rx.flag).length;
+  const flagged = prescriptions.filter(rx => flagMap[rx.id]).length;
   const dispensed = prescriptions.filter(rx => rx.status === 'dispensed').length;
 
-  const statusBreakdown = ['active', 'dispensed', 'flagged']
-    .map(s => ({ key: s, value: prescriptions.filter(rx => rx.status === s).length }))
-    .filter(d => d.value > 0);
+  const statusBreakdown = [
+    { key: 'pending', value: prescriptions.filter(rx => rx.status === 'pending').length },
+    { key: 'dispensed', value: dispensed },
+    { key: 'flagged', value: flagged },
+  ].filter(d => d.value > 0);
 
   return (
     <div className="animate-fade-in space-y-5">
@@ -84,7 +117,6 @@ export default function PharmacyPage() {
               </Pie>
             </PieChart>
           </ResponsiveContainer>
-          {/* Custom tooltip: recharts' Pie tooltip snaps per-slice instead of following the cursor. */}
           {hoveredSlice && (
             <div
               className="fixed z-50 pointer-events-none px-3 py-2 rounded-xl border border-h-border bg-h-surface shadow-modal"
@@ -96,13 +128,15 @@ export default function PharmacyPage() {
           )}
         </div>
         <div className="flex-1 grid grid-cols-3 gap-3 w-full">
-          {['active', 'dispensed', 'flagged'].map(key => (
+          {[['pending','Pending'],['dispensed','Dispensed'],['flagged','Flagged']].map(([key,label]) => (
             <div key={key} className="text-center sm:text-left">
               <div className="flex items-center gap-1.5 justify-center sm:justify-start">
                 <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: STATUS_CHART_COLOR[key] }} />
-                <span className="text-xs text-h-text-muted capitalize">{key}</span>
+                <span className="text-xs text-h-text-muted">{label}</span>
               </div>
-              <p className="text-lg font-bold text-h-text mt-0.5">{prescriptions.filter(rx => rx.status === key).length}</p>
+              <p className="text-lg font-bold text-h-text mt-0.5">
+                {key === 'flagged' ? flagged : prescriptions.filter(rx => rx.status === key).length}
+              </p>
             </div>
           ))}
         </div>
@@ -115,13 +149,13 @@ export default function PharmacyPage() {
             <input value={query} onChange={e => setQuery(e.target.value)}
               onFocus={() => setSearchFocused(true)}
               onBlur={() => setSearchFocused(false)}
-              placeholder="Search by patient, drug or code…"
+              placeholder="Search by patient or drug code…"
               style={searchFocused ? { borderColor:accent, boxShadow:`0 0 0 3px ${accent}25` } : {}}
               className="input-field pl-10" />
           </div>
           <div className="flex items-center gap-2">
             <Filter className="w-4 h-4 text-h-text-muted flex-shrink-0" />
-            {['all','active','dispensed','flagged'].map(f => (
+            {['all','pending','dispensed','flagged'].map(f => (
               <button key={f} onClick={() => setFilter(f)}
                 className={`px-3 py-2 rounded-xl text-xs font-semibold transition-colors capitalize ${
                   filter === f ? 'bg-h-blue text-white' : 'bg-h-bg text-h-text-muted hover:text-h-text border border-h-border'
@@ -133,51 +167,55 @@ export default function PharmacyPage() {
         </div>
 
         <div className="space-y-2.5">
-          {list.map(rx => (
-            <div key={rx.id} id={`rx-row-${rx.id}`}
-              className={`rounded-xl border px-4 py-4 transition-colors duration-700 ${
-                highlightRxId === rx.id
-                  ? 'border-h-blue/25'
-                  : rx.flag ? 'border-h-red/25 bg-h-red-light/30' : 'border-h-border hover:border-h-blue/25'
-              }`}>
-              <div className="flex items-start justify-between gap-3 flex-wrap">
-                <div className="flex items-start gap-3 min-w-0">
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                    rx.flag ? 'bg-h-red-light text-h-red' : 'bg-h-blue-light text-h-blue'
-                  }`}>
-                    {rx.flag ? <AlertTriangle className="w-5 h-5" /> : <Pill className="w-5 h-5" />}
-                  </div>
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap mb-1">
-                      <p className="text-sm font-bold text-h-text">{rx.drug}</p>
-                      <span className="text-xs font-mono text-h-text-muted">{rx.code}</span>
-                      <Badge tone={STATUS_TONE[rx.status] || 'gray'}>{rx.status}</Badge>
+          {list.map(rx => {
+            const flag = flagMap[rx.id];
+            return (
+              <div key={rx.id} id={`rx-row-${rx.id}`}
+                className={`rounded-xl border px-4 py-4 transition-colors duration-700 ${
+                  highlightRxId === rx.id
+                    ? 'border-h-blue/25'
+                    : flag ? 'border-h-red/25 bg-h-red-light/30' : 'border-h-border hover:border-h-blue/25'
+                }`}>
+                <div className="flex items-start justify-between gap-3 flex-wrap">
+                  <div className="flex items-start gap-3 min-w-0">
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                      flag ? 'bg-h-red-light text-h-red' : 'bg-h-blue-light text-h-blue'
+                    }`}>
+                      {flag ? <AlertTriangle className="w-5 h-5" /> : <Pill className="w-5 h-5" />}
                     </div>
-                    <p className="text-xs text-h-text-muted">{rx.patient} · {rx.dosage} · {rx.doctor} · {rx.date}</p>
-                    {rx.flag && (
-                      <div className="flex items-center gap-1.5 mt-2">
-                        <AlertTriangle className="w-3.5 h-3.5 text-h-red" />
-                        <span className="text-xs font-semibold text-h-red">
-                          {rx.flag === 'interaction' ? 'Drug-drug interaction risk detected' : 'Allergy conflict — patient is allergic to this drug class'}
-                        </span>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap mb-1">
+                        <p className="text-sm font-bold text-h-text">{rx.drug_code}</p>
+                        <Badge tone={STATUS_TONE[rx.status] || 'gray'}>{rx.status}</Badge>
                       </div>
-                    )}
+                      <p className="text-xs text-h-text-muted">
+                        {patientMap[rx.record_id] || 'Unknown patient'} · {rx.dosage} · {new Date(rx.created_at).toLocaleDateString()}
+                      </p>
+                      {flag && (
+                        <div className="flex items-center gap-1.5 mt-2">
+                          <AlertTriangle className="w-3.5 h-3.5 text-h-red" />
+                          <span className="text-xs font-semibold text-h-red">
+                            Interaction risk: {flag.conflict_drug} ({flag.severity})
+                          </span>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-                <div className="flex-shrink-0">
-                  {rx.status === 'dispensed'
-                    ? <span className="flex items-center gap-1.5 text-h-green text-xs font-semibold">
-                        <CheckCircle2 className="w-4 h-4" /> Dispensed
-                      </span>
-                    : <button onClick={() => dispense(rx.id)}
-                        className={rx.flag ? 'btn-danger text-xs py-2 px-3.5' : 'btn-teal text-xs py-2 px-3.5'}>
-                        {rx.flag ? 'Override & dispense' : 'Mark dispensed'}
-                      </button>
-                  }
+                  <div className="flex-shrink-0">
+                    {rx.status === 'dispensed'
+                      ? <span className="flex items-center gap-1.5 text-h-green text-xs font-semibold">
+                          <CheckCircle2 className="w-4 h-4" /> Dispensed
+                        </span>
+                      : <button onClick={() => handleDispense(rx.id)}
+                          className={flag ? 'btn-danger text-xs py-2 px-3.5' : 'btn-teal text-xs py-2 px-3.5'}>
+                          {flag ? 'Override & dispense' : 'Mark dispensed'}
+                        </button>
+                    }
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
           {list.length === 0 && (
             <div className="text-center py-12 text-h-text-muted">
               <Pill className="w-8 h-8 mx-auto mb-2 opacity-30" />
