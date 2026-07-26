@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
-import { listInstitutions, listAuditEvents, checkServicesHealth, listStaff, createStaff, deactivateStaff, reactivateStaff, updateInstitution } from '@/lib/api';
+import { listInstitutions, listAuditEvents, checkServicesHealth, listStaff, createStaff, deactivateStaff, reactivateStaff, updateInstitution, createInstitution } from '@/lib/api';
 import Badge from '@/components/ui/Badge';
 import Modal from '@/components/ui/Modal';
 import KPICard from '@/components/ui/KPICard';
@@ -43,6 +43,9 @@ export default function AdminPage() {
   const [staffModal, setStaffModal] = useState(false);
   const [staffForm, setStaffForm] = useState({ full_name: '', email: '', password: '', role: 'DOCTOR', institution_id: '' });
   const [staffError, setStaffError] = useState(null);
+  const [instModal, setInstModal] = useState(false);
+  const [instForm, setInstForm] = useState({ name: '', type: 'Hospital' });
+  const [instError, setInstError] = useState(null);
 
   useEffect(() => {
     if (!token) return;
@@ -117,6 +120,18 @@ export default function AdminPage() {
     }
   };
 
+  const handleCreateInstitution = async () => {
+    setInstError(null);
+    try {
+      await createInstitution(instForm, token);
+      setInstModal(false);
+      setInstForm({ name: '', type: 'Hospital' });
+      setRefreshKey(k => k + 1);
+    } catch (err) {
+      setInstError(err.message);
+    }
+  };
+
   return (
     <div className="animate-fade-in space-y-5">
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -160,7 +175,7 @@ export default function AdminPage() {
             </button>
           ))}
           {tab === 'institutions' && (
-            <button className="btn-primary ml-auto my-2.5 text-xs py-2 px-3.5">
+            <button onClick={() => setInstModal(true)} className="btn-primary ml-auto my-2.5 text-xs py-2 px-3.5">
               <Plus className="w-3.5 h-3.5" /> Onboard institution
             </button>
           )}
@@ -315,6 +330,28 @@ export default function AdminPage() {
           <div className="flex gap-2 pt-1">
             <button onClick={() => setStaffModal(false)} className="btn-secondary flex-1">Cancel</button>
             <button onClick={handleCreateStaff} className="btn-primary flex-1">Create account</button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal open={instModal} onClose={() => setInstModal(false)} title="Onboard institution">
+        <div className="space-y-4">
+          {instError && <p className="text-sm text-red-500">{instError}</p>}
+          <div>
+            <label className="block text-xs font-semibold text-h-text mb-1.5">Institution name</label>
+            <input className="input-field" value={instForm.name}
+              onChange={e => setInstForm(f => ({ ...f, name: e.target.value }))} />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-h-text mb-1.5">Type</label>
+            <select className="input-field" value={instForm.type}
+              onChange={e => setInstForm(f => ({ ...f, type: e.target.value }))}>
+              {['Hospital', 'Clinic', 'Pharmacy', 'Insurance'].map(t => <option key={t} value={t}>{t}</option>)}
+            </select>
+          </div>
+          <div className="flex gap-2 pt-1">
+            <button onClick={() => setInstModal(false)} className="btn-secondary flex-1">Cancel</button>
+            <button onClick={handleCreateInstitution} className="btn-primary flex-1">Onboard</button>
           </div>
         </div>
       </Modal>

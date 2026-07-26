@@ -6,7 +6,7 @@ import KPICard from '@/components/ui/KPICard';
 import Badge from '@/components/ui/Badge';
 import { Activity, ArrowRight, ShieldCheck, ShieldOff, AlertTriangle, CheckCircle2, Pill } from 'lucide-react';
 import Link from 'next/link';
-import { listMyConsents, listMyMedicalRecords, listMyAuditLog, listInstitutions, listAuditEvents, checkServicesHealth } from '@/lib/api';
+import { listMyConsents, listMyMedicalRecords, listMyAuditLog, listInstitutions, listAuditEvents, checkServicesHealth, listPatients, checkConsent, listAllPrescriptions, listAllInteractionFlags } from '@/lib/api';
 
 const INSTITUTION_NAMES = {
   '55555555-5555-5555-5555-555555555555': 'King Faisal Hospital',
@@ -100,62 +100,90 @@ function PatientDashboard({ state }) {
 }
 
 function ClinicDashboard({ state }) {
-  const { clinicPatients, prescriptions } = state;
-  const consented = clinicPatients.filter(p => p.consent).length;
-  const flagged = prescriptions.filter(p => p.flag).length;
+  const { user } = state;
+  const [patients, setPatients] = useState([]);
+  const [consentMap, setConsentMap] = useState({});
+  const [prescriptions, setPrescriptions] = useState([]);
+  const [flagCount, setFlagCount] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!user?.token || !user?.institutionId) return;
+    Promise.all([listPatients(), listAllPrescriptions(), listAllInteractionFlags()])
+      .then(async ([list, rx, flags]) => {
+        setPrescriptions(rx);
+        setFlagCount(flags.length);
+        const entries = await Promise.all(
+          list.map(async (p) => [p.id, await checkConsent(p.id, user.institutionId, user.token).catch(() => null)])
+        );
+        setPatients(list);
+        setConsentMap(Object.fromEntries(entries));
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, [user?.token, user?.institutionId]);
+
+  if (loading) return <p className="text-sm text-h-text-muted">Loading clinic summary...</p>;
+
+  const consented = patients.filter(p => consentMap[p.id]).length;
+
   return (
     <>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <KPICard title="Patients today"    value={clinicPatients.length}  icon="Users"          color="blue"  />
-        <KPICard title="Consent granted"   value={consented}              icon="ShieldCheck"    color="teal"  />
-        <KPICard title="Prescriptions"     value={prescriptions.length}   icon="Pill"           color="green" />
-        <KPICard title="Interaction flags" value={flagged}                icon="AlertTriangle"  color="amber" />
+        <KPICard title="Patients today"    value={patients.length}       icon="Users"          color="blue"  />
+        <KPICard title="Consent granted"   value={consented}             icon="ShieldCheck"    color="teal"  />
+        <KPICard title="Prescriptions"     value={prescriptions.length}  icon="Pill"           color="green" />
+        <KPICard title="Interaction flags" value={flagCount}             icon="AlertTriangle"  color="amber" />
       </div>
-      <div className="grid lg:grid-cols-2 gap-5">
-        <div className="card p-5">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="section-title mb-0">Patient list</h3>
-            <Link href="/clinic" className="text-xs font-semibold text-h-blue flex items-center gap-1 hover:gap-2 transition-all">
-              Open clinic <ArrowRight className="w-3.5 h-3.5" />
-            </Link>
-          </div>
-          {clinicPatients.slice(0, 4).map(p => (
-            <div key={p.id} className="flex items-center justify-between py-2.5 border-b border-h-border last:border-0">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-h-blue-light text-h-blue text-xs font-bold flex items-center justify-center">
-                  {p.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-h-text">{p.name}</p>
-                  <p className="text-xs text-h-text-muted">Age {p.age} · {p.lastVisit}</p>
-                </div>
-              </div>
-              <Badge tone={p.consent ? 'green' : 'red'}>{p.consent ? 'Consented' : 'Blocked'}</Badge>
-            </div>
-          ))}
+      <div className="card p-5">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="section-title mb-0">Patient list</h3>
+          <Link href="/clinic" className="text-xs font-semibold text-h-blue flex items-center gap-1 hover:gap-2 transition-all">
+            Open clinic <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
         </div>
-        <div className="card p-5">
-          <h3 className="section-title">Active prescriptions</h3>
-          {prescriptions.filter(rx => rx.status === 'active').map(rx => (
-            <div key={rx.id} className="flex items-center justify-between py-2.5 border-b border-h-border last:border-0">
+        {patients.slice(0, 4).map(p => (
+          <div key={p.id} className="flex items-center justify-between py-2.5 border-b border-h-border last:border-0">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-h-blue-light text-h-blue text-xs font-bold flex items-center justify-center">
+                {(p.full_name || '?').split(' ').map(n => n[0]).join('').slice(0, 2)}
+              </div>
               <div>
-                <p className="text-sm font-medium text-h-text">{rx.drug}</p>
-                <p className="text-xs text-h-text-muted">{rx.patient} · {rx.dosage}</p>
+                <p className="text-sm font-medium text-h-text">{p.full_name}</p>
+                <p className="text-xs text-h-text-muted">DOB {p.dob}</p>
               </div>
-              {rx.flag ? <Badge tone="red">{rx.flag}</Badge> : <Badge tone="green">Clear</Badge>}
             </div>
-          ))}
-        </div>
+            <Badge tone={consentMap[p.id] ? 'green' : 'red'}>{consentMap[p.id] ? 'Consented' : 'Blocked'}</Badge>
+          </div>
+        ))}
       </div>
     </>
   );
 }
 
 function PharmacyDashboard({ state }) {
-  const { prescriptions } = state;
+  const [prescriptions, setPrescriptions] = useState([]);
+  const [flagMap, setFlagMap] = useState({});
+  const [patientMap, setPatientMap] = useState({});
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    Promise.all([listAllPrescriptions(), listAllInteractionFlags(), listPatients()])
+      .then(([rx, flags, patients]) => {
+        setPrescriptions(rx);
+        setFlagMap(Object.fromEntries(flags.map(f => [f.prescription_id, f])));
+        setPatientMap(Object.fromEntries(patients.map(p => [p.id, p.full_name])));
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, []);
+
+  if (loading) return <p className="text-sm text-h-text-muted">Loading pharmacy summary...</p>;
+
   const pending = prescriptions.filter(rx => rx.status !== 'dispensed').length;
-  const flagged = prescriptions.filter(rx => rx.flag).length;
+  const flagged = prescriptions.filter(rx => flagMap[rx.id]).length;
   const dispensed = prescriptions.length - pending;
+
   return (
     <>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -172,18 +200,21 @@ function PharmacyDashboard({ state }) {
           </Link>
         </div>
         <div className="space-y-2.5">
-          {prescriptions.slice(0, 5).map(rx => (
-            <div key={rx.id} className={`flex items-center justify-between rounded-xl border px-4 py-3 ${rx.flag ? 'border-h-red/25 bg-h-red-light/40' : 'border-h-border'}`}>
-              <div>
-                <p className="text-sm font-semibold text-h-text">{rx.drug}</p>
-                <p className="text-xs text-h-text-muted">{rx.patient} · {rx.code}</p>
+          {prescriptions.slice(0, 5).map(rx => {
+            const flag = flagMap[rx.id];
+            return (
+              <div key={rx.id} className={`flex items-center justify-between rounded-xl border px-4 py-3 ${flag ? 'border-h-red/25 bg-h-red-light/40' : 'border-h-border'}`}>
+                <div>
+                  <p className="text-sm font-semibold text-h-text">{rx.drug_code}</p>
+                  <p className="text-xs text-h-text-muted">{patientMap[rx.record_id] || 'Unknown'} · {rx.dosage}</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  {flag && <Badge tone="red">Interaction</Badge>}
+                  <Badge tone={rx.status === 'dispensed' ? 'green' : 'blue'}>{rx.status}</Badge>
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                {rx.flag && <Badge tone="red">{rx.flag === 'interaction' ? 'Interaction' : 'Allergy'}</Badge>}
-                <Badge tone={rx.status === 'dispensed' ? 'green' : rx.status === 'flagged' ? 'red' : 'blue'}>{rx.status}</Badge>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </>
