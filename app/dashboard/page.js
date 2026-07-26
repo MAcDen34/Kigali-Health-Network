@@ -6,7 +6,7 @@ import KPICard from '@/components/ui/KPICard';
 import Badge from '@/components/ui/Badge';
 import { Activity, ArrowRight, ShieldCheck, ShieldOff, AlertTriangle, CheckCircle2, Pill } from 'lucide-react';
 import Link from 'next/link';
-import { listMyConsents, listMyMedicalRecords, listMyAuditLog, listInstitutions, listAuditEvents, checkServicesHealth, listPatients, checkConsent, listAllPrescriptions, listAllInteractionFlags } from '@/lib/api';
+import { listMyConsents, listMyMedicalRecords, listMyAuditLog, listInstitutions, listAuditEvents, checkServicesHealth, listPatients, checkConsent, listAllPrescriptions, listAllInteractionFlags, listClaims } from '@/lib/api';
 
 const INSTITUTION_NAMES = {
   '55555555-5555-5555-5555-555555555555': 'King Faisal Hospital',
@@ -223,10 +223,29 @@ function PharmacyDashboard({ state }) {
 }
 
 function InsuranceDashboard({ state }) {
-  const { claims } = state;
+  const { user } = state;
+  const [claims, setClaims] = useState([]);
+  const [patientMap, setPatientMap] = useState({});
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!user?.token) return;
+    Promise.all([listClaims(user.token), listPatients(user.token)])
+      .then(([claimData, patients]) => {
+        setClaims(claimData);
+        setPatientMap(Object.fromEntries(patients.map(p => [p.id, p.full_name])));
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, [user?.token]);
+
+  if (loading) return <p className="text-sm text-h-text-muted">Loading claims summary...</p>;
+
+  const amountOf = (c) => Number(c.amount || 0);
   const pending = claims.filter(c => c.status === 'pending').length;
   const paid = claims.filter(c => c.status === 'paid').length;
-  const total = claims.reduce((s, c) => s + c.amount, 0);
+  const total = claims.reduce((s, c) => s + amountOf(c), 0);
+
   return (
     <>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -242,6 +261,9 @@ function InsuranceDashboard({ state }) {
             Manage all <ArrowRight className="w-3.5 h-3.5" />
           </Link>
         </div>
+        {claims.length === 0 ? (
+          <p className="text-sm text-h-text-muted">No claims yet.</p>
+        ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
@@ -253,13 +275,13 @@ function InsuranceDashboard({ state }) {
               </tr>
             </thead>
             <tbody>
-              {claims.map(c => (
+              {claims.slice(0, 5).map(c => (
                 <tr key={c.id} className="border-b border-h-border last:border-0">
-                  <td className="py-3 font-mono text-xs text-h-text-muted">{c.id}</td>
-                  <td className="py-3 text-h-text font-medium">{c.patient}</td>
-                  <td className="py-3 text-h-text">RWF {c.amount.toLocaleString()}</td>
+                  <td className="py-3 font-mono text-xs text-h-text-muted">{c.id.slice(0, 8)}</td>
+                  <td className="py-3 text-h-text font-medium">{patientMap[c.patient_id] || 'Unknown'}</td>
+                  <td className="py-3 text-h-text">RWF {amountOf(c).toLocaleString()}</td>
                   <td className="py-3">
-                    <Badge tone={c.status === 'paid' ? 'green' : c.status === 'approved' ? 'blue' : c.status === 'rejected' ? 'red' : 'amber'}>
+                    <Badge tone={c.status === 'paid' ? 'green' : c.status === 'approved' ? 'blue' : c.status === 'denied' ? 'red' : 'amber'}>
                       {c.status[0].toUpperCase() + c.status.slice(1)}
                     </Badge>
                   </td>
@@ -268,6 +290,7 @@ function InsuranceDashboard({ state }) {
             </tbody>
           </table>
         </div>
+        )}
       </div>
     </>
   );
