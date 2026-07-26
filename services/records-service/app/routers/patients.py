@@ -4,11 +4,13 @@ from uuid import UUID
 from typing import List
 from .. import models, schemas
 from ..database import get_db
+from ..dependencies import get_current_actor
 
 router = APIRouter(prefix="/api/records", tags=["patients"])
 
 @router.get("/patients", response_model=List[schemas.PatientOut])
-def list_patients(db: Session = Depends(get_db)):
+def list_patients(db: Session = Depends(get_db), actor_id: str = Depends(get_current_actor)):
+    """Requires any valid, authenticated session (staff or patient) — no anonymous access to patient PII."""
     return db.query(models.Patient).filter(models.Patient.active == True).all()
 
 @router.post("/patients", response_model=schemas.PatientOut)

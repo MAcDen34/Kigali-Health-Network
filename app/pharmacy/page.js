@@ -35,7 +35,7 @@ export default function PharmacyPage() {
   const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
-    Promise.all([listAllPrescriptions(), listAllInteractionFlags(), listPatients()])
+    Promise.all([listAllPrescriptions(), listAllInteractionFlags(), listPatients(user.token)])
       .then(([rx, flags, patients]) => {
         setPrescriptions(rx);
         setFlagMap(Object.fromEntries(flags.map(f => [f.prescription_id, f])));

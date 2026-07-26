@@ -47,7 +47,7 @@ export default function ClinicPage() {
   // Load the patient list, then check this institution's consent status for each.
   useEffect(() => {
     if (!user?.token || !user?.institutionId) return;
-    listPatients()
+    listPatients(user.token)
       .then(async (list) => {
         setPatients(list);
         const entries = await Promise.all(
