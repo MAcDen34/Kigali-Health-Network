@@ -26,6 +26,19 @@ def get_current_actor(
     authorization: str = Header(None),
     db: Session = Depends(get_db),
 ):
+    """
+    Supports two auth styles:
+    - the existing X-Actor-Id header (legacy, still used by some flows)
+    - a real 'Authorization: Bearer <token>' JWT
+
+    The Bearer branch now checks the token's role claim: a PATIENT token
+    is re-verified against the Patient table on every request (so a
+    deactivated patient's existing token stops working immediately). A
+    staff token (DOCTOR, NURSE, PHARMACIST, INSURANCE_AGENT, PLATFORM_ADMIN)
+    has no corresponding row in this service's Patient table at all — it's
+    trusted directly based on the shared signing secret, the same way
+    clinical-service already trusts admin-issued tokens without a DB lookup.
+    """
     if authorization and authorization.startswith("Bearer "):
         token = authorization.split(" ", 1)[1]
         try:
@@ -33,13 +46,17 @@ def get_current_actor(
         except jwt.InvalidTokenError:
             raise HTTPException(status_code=401, detail="Invalid or expired token")
 
-        patient = db.query(models.Patient).filter(
-            models.Patient.id == payload["sub"],
-            models.Patient.active == True
-        ).first()
-        if not patient:
-            raise HTTPException(status_code=401, detail="Account not found or deactivated")
-        return str(patient.id)
+        if payload.get("role") == "PATIENT":
+            patient = db.query(models.Patient).filter(
+                models.Patient.id == payload["sub"],
+                models.Patient.active == True
+            ).first()
+            if not patient:
+                raise HTTPException(status_code=401, detail="Account not found or deactivated")
+            return str(patient.id)
+
+        # Staff token — trust the shared-secret signature directly.
+        return payload["sub"]
 
     if x_actor_id:
         return x_actor_id

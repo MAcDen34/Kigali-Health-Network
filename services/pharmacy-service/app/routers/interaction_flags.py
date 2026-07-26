@@ -1,12 +1,17 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from uuid import UUID
+from typing import List
 from .. import models, schemas
 from ..database import get_db
 
 
 router = APIRouter(prefix="/api/pharmacy", tags=["interaction_flags"])
 
+@router.get("/interaction_flags", response_model=List[schemas.InteractionFlagOut])
+def list_interaction_flags(db: Session = Depends(get_db)):
+    """List all interaction flags — used to cross-reference against prescriptions in both the Clinic and Pharmacy views."""
+    return db.query(models.InteractionFlag).order_by(models.InteractionFlag.created_at.desc()).all()
 
 @router.post("/interaction_flags", response_model=schemas.InteractionFlagOut)
 def create_interaction_flag(payload: schemas.InteractionFlagCreate, db: Session = Depends(get_db)):
