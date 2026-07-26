@@ -10,6 +10,12 @@ services:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+      - ./db-init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kuprin -d kuprin"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
 
   redis:
     image: redis:7
@@ -18,16 +24,34 @@ services:
 
   records-service:
     build: ./services/records-service
+    command: sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
     ports:
       - "8000:8000"
     environment:
       DATABASE_URL: postgresql://kuprin:kuprin_dev@postgres:5432/kuprin
       REDIS_URL: redis://redis:6379
     depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    volumes:
+      - ./services/records-service:/app
+
+  clinical-service:
+    build: ./services/clinical-service
+    ports:
+      - "8001:8001"
+    environment:
+      DATABASE_URL: postgresql://kuprin:kuprin_dev@postgres:5432/kuprin
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: "960ff9467b8635b47fac30876f4d377e750d501b7686cc3401de8d9af6d540bb"
+      RECORDS_SERVICE_URL: http://records-service:8000
+    depends_on:
       - postgres
       - redis
     volumes:
-      - ./services/records-service:/app
+      - ./services/clinical-service:/app
 
   pharmacy-service:
     build: ./services/pharmacy-service
@@ -49,25 +73,25 @@ services:
     environment:
       DATABASE_URL: postgresql://kuprin:kuprin_dev@postgres:5432/kuprin
       REDIS_URL: redis://redis:6379
+      JWT_SECRET: "960ff9467b8635b47fac30876f4d377e750d501b7686cc3401de8d9af6d540bb"
     depends_on:
       - postgres
       - redis
     volumes:
       - ./services/admin-service:/app
 
-  clinical-service:
-    build: ./services/clinical-service
+  notification-service:
+    build: ./services/notification-service
     ports:
-      - "8001:8001"
+      - "8005:8005"
     environment:
       DATABASE_URL: postgresql://kuprin:kuprin_dev@postgres:5432/kuprin
       REDIS_URL: redis://redis:6379
-      RECORDS_SERVICE_URL: http://records-service:8000
     depends_on:
       - postgres
       - redis
     volumes:
-      - ./services/clinical-service:/app
+      - ./services/notification-service:/app
 
 volumes:
   pgdata:
