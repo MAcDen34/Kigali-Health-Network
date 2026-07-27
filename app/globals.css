@@ -6,52 +6,52 @@
 @layer base {
   /* "R G B" triplets so Tailwind opacity modifiers (bg-h-blue/15) still work. */
   :root {
-    --color-h-blue: 90 138 166;
-    --color-h-blue-dark: 62 107 138;
-    --color-h-blue-light: 234 242 246;
-    --color-h-teal: 79 163 145;
-    --color-h-teal-dark: 53 133 115;
-    --color-h-teal-light: 233 245 242;
-    --color-h-green: 116 173 118;
-    --color-h-green-dark: 90 155 92;
-    --color-h-green-light: 240 247 238;
-    --color-h-amber: 204 138 56;
-    --color-h-amber-light: 251 241 227;
-    --color-h-red: 188 83 71;
-    --color-h-red-light: 252 238 236;
-    --color-h-purple: 149 117 184;
-    --color-h-purple-light: 243 239 248;
-    --color-h-bg: 247 244 238;
+    --color-h-blue: 14 124 158;
+    --color-h-blue-dark: 10 95 122;
+    --color-h-blue-light: 227 242 247;
+    --color-h-teal: 63 191 173;
+    --color-h-teal-dark: 46 150 134;
+    --color-h-teal-light: 228 247 244;
+    --color-h-green: 30 158 107;
+    --color-h-green-dark: 22 121 79;
+    --color-h-green-light: 224 244 235;
+    --color-h-amber: 217 119 6;
+    --color-h-amber-light: 252 238 220;
+    --color-h-red: 220 38 38;
+    --color-h-red-light: 252 228 228;
+    --color-h-purple: 124 111 196;
+    --color-h-purple-light: 239 236 250;
+    --color-h-bg: 244 248 250;
     --color-h-surface: 255 255 255;
-    --color-h-border: 70 63 52;
-    --color-h-text: 42 38 33;
-    --color-h-text-muted: 88 80 68;
-    --color-h-text-light: 105 96 80;
-    --shadow-color: 42 38 33;
+    --color-h-border: 220 230 236;
+    --color-h-text: 13 27 42;
+    --color-h-text-muted: 91 114 132;
+    --color-h-text-light: 140 160 175;
+    --shadow-color: 13 27 42;
   }
 
   .dark {
-    --color-h-blue: 130 175 201;
-    --color-h-blue-dark: 158 194 216;
-    --color-h-blue-light: 34 52 64;
-    --color-h-teal: 111 195 176;
-    --color-h-teal-dark: 138 210 193;
-    --color-h-teal-light: 30 56 51;
-    --color-h-green: 143 199 145;
-    --color-h-green-dark: 166 214 168;
-    --color-h-green-light: 37 59 38;
-    --color-h-amber: 224 162 90;
-    --color-h-amber-light: 61 46 24;
-    --color-h-red: 217 119 107;
-    --color-h-red-light: 61 33 29;
-    --color-h-purple: 177 153 209;
-    --color-h-purple-light: 46 39 64;
-    --color-h-bg: 28 26 23;
-    --color-h-surface: 36 33 29;
-    --color-h-border: 55 50 43;
-    --color-h-text: 242 238 230;
-    --color-h-text-muted: 176 166 149;
-    --color-h-text-light: 125 117 102;
+    --color-h-blue: 79 184 214;
+    --color-h-blue-dark: 111 200 226;
+    --color-h-blue-light: 23 49 61;
+    --color-h-teal: 95 224 203;
+    --color-h-teal-dark: 127 234 217;
+    --color-h-teal-light: 18 59 52;
+    --color-h-green: 62 203 143;
+    --color-h-green-dark: 94 219 163;
+    --color-h-green-light: 18 56 37;
+    --color-h-amber: 240 160 61;
+    --color-h-amber-light: 61 44 20;
+    --color-h-red: 240 85 79;
+    --color-h-red-light: 61 25 23;
+    --color-h-purple: 167 154 224;
+    --color-h-purple-light: 44 39 64;
+    --color-h-bg: 11 22 32;
+    --color-h-surface: 18 33 46;
+    --color-h-border: 30 46 58;
+    --color-h-text: 232 241 245;
+    --color-h-text-muted: 143 163 176;
+    --color-h-text-light: 100 121 138;
     --shadow-color: 0 0 0;
   }
 
