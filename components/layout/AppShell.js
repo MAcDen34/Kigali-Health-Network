@@ -2,7 +2,7 @@
 import { useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useApp } from '@/context/AppContext';
-import { ROLE_NAV, ALWAYS_ALLOWED_ROUTES } from '@/data/roles';
+import { ROLE_NAV, ALWAYS_ALLOWED_ROUTES, ALL_ROUTE_KEYS } from '@/data/roles';
 import Sidebar from './Sidebar';
 import Header from './Header';
 
@@ -11,12 +11,13 @@ const PUBLIC_PATHS = ['/', '/login'];
 export default function AppShell({ children }) {
   const { state, hydrated } = useApp();
   const { user, sidebarCollapsed } = state;
-  const isDark = state.theme === 'dark';
   const router = useRouter();
   const pathname = usePathname();
   const isPublic = PUBLIC_PATHS.includes(pathname);
   const routeKey = pathname.split('/')[1];
+  const isKnownRoute = ALL_ROUTE_KEYS.includes(routeKey);
   const hasRouteAccess = !user || ALWAYS_ALLOWED_ROUTES.includes(routeKey) || (ROLE_NAV[user.role] || []).includes(routeKey);
+  const isBlocked = isKnownRoute && !hasRouteAccess;
 
   useEffect(() => {
     if (!hydrated) return;
@@ -24,8 +25,10 @@ export default function AppShell({ children }) {
       router.replace('/login');
       return;
     }
-    // Sidebar only hides the link — this actually enforces it.
-    if (!isPublic && user && !hasRouteAccess) {
+    // Sidebar only hides the link — this actually enforces it. Unknown
+    // routes (not just unauthorized ones) fall through to the 404 page
+    // instead of bouncing to dashboard.
+    if (!isPublic && user && isBlocked) {
       router.replace('/dashboard');
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -34,20 +37,10 @@ export default function AppShell({ children }) {
   if (!hydrated && !isPublic) return null;
   if (isPublic) return <>{children}</>;
   if (!user) return null;
-  if (!hasRouteAccess) return null;
+  if (isBlocked) return null;
 
   return (
-    <div className="flex h-screen overflow-hidden">
-      {/* Same photo/treatment as the login page. -z-10 keeps it behind Sidebar/Header/main. */}
-      <div
-        className="fixed inset-0 -z-10 bg-cover bg-center scale-110"
-        style={{
-          backgroundImage: "url('/login-hero.jpg')",
-          filter: isDark ? 'blur(28px) brightness(1.1)' : 'blur(28px) brightness(1.7) saturate(0.85)',
-        }}
-      />
-      <div className={`fixed inset-0 -z-10 ${isDark ? 'bg-h-bg/85' : 'bg-h-bg/50'}`} />
-
+    <div className="flex h-screen overflow-hidden bg-h-bg">
       <Sidebar />
       <div
         className={`flex flex-col flex-1 min-w-0 transition-all duration-300 overflow-hidden ${
