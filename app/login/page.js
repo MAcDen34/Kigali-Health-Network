@@ -3,28 +3,16 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useApp } from '@/context/AppContext';
 import { loginWithCredentials } from '@/utils/authUtils';
-import { DEMO_USERS, ROLES, ROLE_ACCENT } from '@/data/roles';
 import ThemeToggle from '@/components/ui/ThemeToggle';
 import { Mail, Lock, Eye, EyeOff, LogIn, AlertCircle, Cross, Heart } from 'lucide-react';
-
-const QUICK_DEMO = [
-  { label:'Admin',       userId:'USR001' },
-  { label:'Patient',     userId:'USR002' },
-  { label:'Doctor',      userId:'USR003' },
-  { label:'Nurse',       userId:'USR004' },
-  { label:'Pharmacist',  userId:'USR005' },
-  { label:'Insurance',   userId:'USR006' },
-];
 
 export default function LoginPage() {
   const router = useRouter();
   const { state, dispatch } = useApp();
-  const isDark = state.theme === 'dark';
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [demoLoading, setDemoLoading] = useState(null);
   const [error, setError] = useState('');
 
   const handleLogin = async (e) => {
@@ -41,15 +29,6 @@ export default function LoginPage() {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleDemo = async (userId) => {
-    setDemoLoading(userId);
-    const user = DEMO_USERS.find(u => u.id === userId);
-    if (!user) return;
-    await new Promise(r => setTimeout(r, 600));
-    dispatch({ type:'LOGIN', payload:user });
-    router.push('/dashboard');
   };
 
   return (
@@ -100,17 +79,7 @@ export default function LoginPage() {
         </p>
       </div>
 
-      <div className="flex-1 relative flex flex-col items-center justify-center p-6 md:p-10 overflow-hidden">
-        {/* Light mode needs the photo lifted brighter — otherwise a light wash on a dark photo just goes flat. */}
-        <div
-          className="absolute inset-0 bg-cover bg-center scale-110"
-          style={{
-            backgroundImage: "url('/login-hero.jpg')",
-            filter: isDark ? 'blur(28px) brightness(1.1)' : 'blur(28px) brightness(1.7) saturate(0.85)',
-          }}
-        />
-        <div className={`absolute inset-0 ${isDark ? 'bg-h-bg/85' : 'bg-h-bg/50'}`} />
-
+      <div className="flex-1 relative flex flex-col items-center justify-center p-6 md:p-10 overflow-hidden" style={{ backgroundColor: 'rgb(var(--color-h-bg))' }}>
         <div className="absolute top-4 right-4 md:top-6 md:right-6">
           <ThemeToggle />
         </div>
@@ -169,42 +138,6 @@ export default function LoginPage() {
               }
             </button>
           </form>
-
-          <div className="mt-7">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="flex-1 h-px bg-h-border" />
-              <span className="text-xs font-medium text-h-text-light px-1">Demo accounts</span>
-              <div className="flex-1 h-px bg-h-border" />
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {QUICK_DEMO.map(demo => {
-                const u = DEMO_USERS.find(d => d.id === demo.userId);
-                if (!u) return null;
-                const accent = ROLE_ACCENT[u.role];
-                return (
-                  <button
-                    key={demo.userId}
-                    onClick={() => handleDemo(demo.userId)}
-                    disabled={!!demoLoading}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-medium transition-all duration-200 disabled:opacity-50"
-                    style={{
-                      borderColor: demoLoading === demo.userId ? accent : 'rgb(var(--color-h-border))',
-                      color: demoLoading === demo.userId ? accent : 'rgb(var(--color-h-text-muted))',
-                      backgroundColor: demoLoading === demo.userId ? `${accent}0F` : 'transparent',
-                    }}
-                    onMouseEnter={e => { e.currentTarget.style.borderColor = accent; e.currentTarget.style.color = accent; e.currentTarget.style.backgroundColor = `${accent}0F`; }}
-                    onMouseLeave={e => { if (demoLoading !== demo.userId) { e.currentTarget.style.borderColor = 'rgb(var(--color-h-border))'; e.currentTarget.style.color = 'rgb(var(--color-h-text-muted))'; e.currentTarget.style.backgroundColor = 'transparent'; }}}
-                  >
-                    {demoLoading === demo.userId && (
-                      <div className="w-3 h-3 border border-current border-t-transparent rounded-full animate-spin" />
-                    )}
-                    {demo.label}
-                  </button>
-                );
-              })}
-            </div>
-            <p className="text-[11px] text-h-text-light mt-3">Click any demo role to sign in instantly — no password needed</p>
-          </div>
         </div>
       </div>
     </div>

@@ -20,6 +20,10 @@ export const ROLE_NAV = {
 // Account-level pages every role may reach regardless of ROLE_NAV.
 export const ALWAYS_ALLOWED_ROUTES = ['dashboard', 'profile', 'notifications'];
 
+// Every route that actually exists, restricted or not — lets AppShell tell
+// "real page you can't access" (redirect) apart from "doesn't exist" (404).
+export const ALL_ROUTE_KEYS = [...new Set([...ALWAYS_ALLOWED_ROUTES, ...Object.values(ROLE_NAV).flat()])];
+
 // Red excluded on purpose — reserved for danger/alert states, not identity.
 export const ROLE_ACCENT = {
   PLATFORM_ADMIN:  '#5B4E8C',
