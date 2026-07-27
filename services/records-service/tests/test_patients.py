@@ -1,5 +1,6 @@
 def test_create_patient(client):
     response = client.post("/api/records/patients", json={
+        "full_name": "Test Patient",
         "national_id": "1199099999999999",
         "dob": "1985-03-20",
         "blood_group": "A+",

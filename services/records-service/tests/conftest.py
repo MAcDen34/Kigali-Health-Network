@@ -1,8 +1,13 @@
+import os
+import jwt
 import pytest
+from datetime import datetime, timedelta
 from sqlalchemy.orm import sessionmaker
 from fastapi.testclient import TestClient
 from app.main import app
 from app.database import engine, get_db
+
+JWT_SECRET = os.getenv("JWT_SECRET", "dev-secret-change-in-production")
 
 @pytest.fixture()
 def db_session():
@@ -25,3 +30,16 @@ def client(db_session):
     app.dependency_overrides[get_db] = override_get_db
     yield TestClient(app)
     app.dependency_overrides.clear()
+
+@pytest.fixture()
+def make_patient_token():
+    """Returns a function that builds a real, valid PATIENT-role JWT for a given patient ID."""
+    def _make(patient_id):
+        payload = {
+            "sub": str(patient_id),
+            "role": "PATIENT",
+            "exp": datetime.utcnow() + timedelta(minutes=30),
+            "iat": datetime.utcnow(),
+        }
+        return jwt.encode(payload, JWT_SECRET, algorithm="HS256")
+    return _make

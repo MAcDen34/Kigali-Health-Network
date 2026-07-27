@@ -3,6 +3,7 @@ INSTITUTION = "11111111-1111-1111-1111-111111111111"
 
 def _create_test_patient(client):
     response = client.post("/api/records/patients", json={
+        "full_name": "Test Patient",
         "national_id": "1188011122334455",
         "dob": "1992-01-01",
         "blood_group": "B+",

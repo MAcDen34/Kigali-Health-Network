@@ -1,11 +1,11 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .database import Base, engine
-from .routers import institutions, staff, audit, auth
+from .routers import institutions, staff, audit, auth, health
 
 app = FastAPI(
     title="Admin & Platform Service",
-    description="Institution onboarding, staff management, API tokens, and platform audit for KUNRN.",
+    description="Institution onboarding, staff management, API tokens, and platform audit for KUPRIN.",
     version="1.0.0",
 )
 
@@ -25,6 +25,7 @@ app.include_router(institutions.router)
 app.include_router(staff.router)
 app.include_router(audit.router)
 app.include_router(auth.router)
+app.include_router(health.router)
 
 @app.get("/health")
 def health():

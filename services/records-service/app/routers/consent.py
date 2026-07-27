@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from uuid import UUID
+from typing import List
 from .. import models, schemas
 from ..database import get_db
 from datetime import datetime
@@ -11,9 +12,6 @@ from ..audit import log_access
 router = APIRouter(prefix="/api/records", tags=["consent"])
 
 def log_consent_action(db: Session, actor_id: UUID, patient_id: UUID, action: str):
-    """
-    Logs the consent action to the audit log.
-    """
     log_access(db, actor_id, patient_id, action)
 
 
@@ -38,12 +36,20 @@ def check_consent(patient_id: UUID, institution_id: UUID, db: Session = Depends(
     log_consent_action(db, actor_id, patient_id, "check")
     return consent
 
+@router.get("/patients/{patient_id}/consents", response_model=List[schemas.ConsentOut])
+def list_patient_consents(patient_id: UUID, db: Session = Depends(get_db), actor_id: UUID = Depends(get_current_actor)):
+    if str(actor_id) != str(patient_id):
+        raise HTTPException(status_code=403, detail="You can only view your own consents.")
+    return db.query(models.ConsentGrant).filter(
+        models.ConsentGrant.patient_id == patient_id
+    ).order_by(models.ConsentGrant.granted_at.desc()).all()
+
 @router.delete("/consents/{consent_id}")
 def revoke_consent(consent_id: UUID, db: Session = Depends(get_db), actor_id: UUID = Depends(get_current_actor)):
     consent = db.query(models.ConsentGrant).filter(models.ConsentGrant.id == consent_id).first()
     if not consent:
         raise HTTPException(status_code=404, detail="Consent not found")
-    log_consent_action(db, actor_id, consent.patient_id, "revoke")  
+    log_consent_action(db, actor_id, consent.patient_id, "revoke")
     consent.revoked_at = datetime.utcnow()
     db.commit()
     db.refresh(consent)

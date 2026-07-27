@@ -3,12 +3,13 @@ from sqlalchemy.orm import Session
 from uuid import UUID
 from .. import models, schemas
 from ..database import get_db
+from ..dependencies import get_current_actor, ActorContext
 
 
 router = APIRouter(prefix="/api/pharmacy", tags=["dispensing"])
 
 @router.post("/dispensing", response_model=schemas.DispensingRecordOut)
-def create_dispensing_record(payload: schemas.DispensingRecordCreate, db: Session = Depends(get_db)):
+def create_dispensing_record(payload: schemas.DispensingRecordCreate, db: Session = Depends(get_db), actor: ActorContext = Depends(get_current_actor)):
     prescription = db.query(models.Prescription).filter(models.Prescription.id == payload.prescription_id).first()
     if not prescription:
         raise HTTPException(status_code=404, detail="Prescription not found")
@@ -27,9 +28,8 @@ def create_dispensing_record(payload: schemas.DispensingRecordCreate, db: Sessio
     return dispensing_record
 
 @router.get("/dispensing/{dispensing_id}", response_model=schemas.DispensingRecordOut)
-def get_dispensing_record(dispensing_id: UUID, db: Session = Depends(get_db)):
+def get_dispensing_record(dispensing_id: UUID, db: Session = Depends(get_db), actor: ActorContext = Depends(get_current_actor)):
     dispensing_record = db.query(models.DispensingRecord).filter(models.DispensingRecord.id == dispensing_id).first()
     if not dispensing_record:
         raise HTTPException(status_code=404, detail="Dispensing record not found")
     return dispensing_record
-
