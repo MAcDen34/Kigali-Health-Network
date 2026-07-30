@@ -21,6 +21,7 @@ SERVICES = [
     ("records-service", "http://records-service:8000/health", 8000),
     ("clinical-service", "http://clinical-service:8001/health", 8001),
     ("pharmacy-service", "http://pharmacy-service:8002/health", 8002),
+    ("insurance-service", "http://insurance-service:8003/health", 8003),
     ("notification-service", "http://notification-service:8005/health", 8005),
 ]
 
