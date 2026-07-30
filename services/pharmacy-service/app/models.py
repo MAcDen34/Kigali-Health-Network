@@ -10,6 +10,7 @@ class Prescription(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     record_id = Column(UUID(as_uuid=True), nullable=False)  # references records.medical_records — no FK, cross-schema boundary
+    patient_id = Column(UUID(as_uuid=True), nullable=True)  # denormalised from the medical record for display purposes
     doctor_id = Column(UUID(as_uuid=True), nullable=False)
     drug_code = Column(String, nullable=False)
     dosage = Column(String, nullable=False)
