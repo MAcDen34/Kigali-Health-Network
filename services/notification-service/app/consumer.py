@@ -61,12 +61,14 @@ def poll_once(count=1, block_ms=1000, stream_name=STREAM_NAME, group_name=GROUP_
 
 
 def consume_loop():
-    ensure_group()
+    import time
     while True:
         try:
+            ensure_group()
             poll_once(count=1, block_ms=5000)
         except Exception as e:
             print(f"[notification-consumer] error: {e}")
+            time.sleep(5)
 
 
 def start_consumer_thread():
