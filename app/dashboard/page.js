@@ -207,7 +207,7 @@ function PharmacyDashboard({ state }) {
               <div key={rx.id} className={`flex items-center justify-between rounded-xl border px-4 py-3 ${flag ? 'border-h-red/25 bg-h-red-light/40' : 'border-h-border'}`}>
                 <div>
                   <p className="text-sm font-semibold text-h-text">{rx.drug_code}</p>
-                  <p className="text-xs text-h-text-muted">{patientMap[rx.record_id] || 'Unknown'} · {rx.dosage}</p>
+                  <p className="text-xs text-h-text-muted">{patientMap[rx.patient_id] || 'Unknown'} · {rx.dosage}</p>
                 </div>
                 <div className="flex items-center gap-2">
                   {flag && <Badge tone="red">Interaction</Badge>}
