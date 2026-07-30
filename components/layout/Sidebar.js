@@ -10,6 +10,7 @@ import {
   Settings2, ChevronLeft, ChevronRight, ChevronsUpDown, LogOut,
   Activity, Heart, Cross, Building2, Lock,
 } from 'lucide-react';
+import { loginWithCredentials } from '@/utils/authUtils';
 
 // Notifications is reached via the header bell only, not listed here.
 const ALL_NAV = [
@@ -49,14 +50,22 @@ export default function Sidebar() {
     setSwitchError('');
   };
 
-  const confirmSwitch = (e) => {
+  const confirmSwitch = async (e) => {
     e.preventDefault();
-    if (switchPassword === switchTarget.password) {
-      switchTo(switchTarget);
+    try {
+      const newUser = await loginWithCredentials(switchTarget.email, switchPassword);
+      dispatch({ type: 'LOGIN', payload: newUser });
+      router.push('/dashboard');
       setSwitchTarget(null);
-    } else {
+    } catch (err) {
       setSwitchError('Incorrect password.');
     }
+    // if (switchPassword === switchTarget.password) {
+    //   switchTo(switchTarget);
+    //   setSwitchTarget(null);
+    // } else {
+    //   setSwitchError('Incorrect password.');
+    // }
   };
 
   const NavLink = ({ item }) => {
