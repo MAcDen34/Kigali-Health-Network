@@ -1,4 +1,5 @@
 import os
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .database import Base, engine
@@ -18,12 +19,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.on_event("startup")
-def startup():
+@asynccontextmanager
+async def lifespan(app):
     Base.metadata.create_all(bind=engine)
     if os.getenv("DISABLE_CONSUMER") != "1":
         from .consumer import start_consumer_thread
         start_consumer_thread()
+    yield
 
 app.include_router(claims.router)
 

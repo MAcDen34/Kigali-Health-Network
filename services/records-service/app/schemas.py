@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from uuid import UUID
 from datetime import date, datetime
 from typing import Optional
@@ -12,8 +12,7 @@ class PatientCreate(BaseModel):
 
 class PatientOut(PatientCreate):
     id: UUID
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class ConsentGrantCreate(BaseModel):
     patient_id: UUID
@@ -25,8 +24,7 @@ class ConsentOut(BaseModel):
     institution_id: UUID
     granted_at: datetime
     revoked_at: Optional[datetime]
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class MedicalRecordCreate(BaseModel):
     patient_id: UUID
@@ -36,8 +34,7 @@ class MedicalRecordCreate(BaseModel):
 class MedicalRecordOut(MedicalRecordCreate):
     id: UUID
     created_at: datetime
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class AuditLogOut(BaseModel):
     id: UUID
@@ -46,5 +43,4 @@ class AuditLogOut(BaseModel):
     action: str
     timestamp: datetime
     ip_address: Optional[str] = None
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

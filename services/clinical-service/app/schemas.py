@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from uuid import UUID
 from datetime import datetime, date
 from typing import Optional, List
@@ -19,7 +19,7 @@ class DiagnosisOut(BaseModel):
     description:    str
     notes:          Optional[str] = None
     created_at:     datetime
-    class Config: from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class VitalsCreate(BaseModel):
@@ -41,7 +41,7 @@ class VitalsOut(BaseModel):
     oxygen_sat:     Optional[str] = None
     notes:          Optional[str] = None
     recorded_at:    datetime
-    class Config: from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class TreatmentPlanCreate(BaseModel):
@@ -58,7 +58,7 @@ class TreatmentPlanOut(BaseModel):
     plan:           dict
     follow_up_date: Optional[datetime] = None
     created_at:     datetime
-    class Config: from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class PrescriptionCreate(BaseModel):
@@ -82,7 +82,7 @@ class PrescriptionOut(BaseModel):
     status:         str
     flag:           Optional[str] = None
     created_at:     datetime
-    class Config: from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class InteractionFlagOut(BaseModel):
