@@ -10,6 +10,7 @@ import { ShieldCheck, ShieldOff, AlertTriangle, Search, Plus, Activity, Pill, X 
 import {
   listPatients, checkConsent, listPatientDiagnoses, listPatientVitals,
   createDiagnosis, createVitals, listPatientPrescriptions,
+  createPrescription, createMedicalRecord,
 } from '@/lib/api';
  
 function vitalsDetail(v) {
@@ -41,7 +42,7 @@ export default function ClinicPage() {
   const [query, setQuery] = useState('');
   const [searchFocused, setSearchFocused] = useState(false);
   const [modal, setModal] = useState(false);
-  const [form, setForm] = useState({ detail: '' });
+  const [form, setForm] = useState({ detail: '', entryType: 'diagnosis', drugCode: '', dosage: '' });
   const [refreshKey, setRefreshKey] = useState(0); // bump this to re-trigger the guarded fetch below — the ONLY place history/prescriptions get fetched
  
   // Load the patient list, then check this institution's consent status for each.
@@ -121,16 +122,26 @@ export default function ClinicPage() {
   const consented = patients.filter(p => consentMap[p.id]).length;
  
   const handleSave = async () => {
-    if (!form.detail.trim() || !selected) return;
+    if (!selected) return;
     try {
       if (isNurse) {
+        if (!form.detail.trim()) return;
         await createVitals({ patient_id: selected.id, notes: form.detail }, user.token);
+      } else if (form.entryType === 'prescription') {
+        if (!form.drugCode.trim() || !form.dosage.trim()) return;
+        const record = await createMedicalRecord(selected.id, 'prescription_note', {
+          note: `Prescription: ${form.drugCode} — ${form.dosage}`,
+          institution: user.institution || 'King Faisal Hospital',
+          doctor: user.name,
+        }, user.token);
+        await createPrescription(record.id, user.id, form.drugCode, form.dosage, selected.id, user.token);
       } else {
+        if (!form.detail.trim()) return;
         await createDiagnosis({ patient_id: selected.id, description: form.detail }, user.token);
       }
       setModal(false);
-      setForm({ detail: '' });
-      setRefreshKey(k => k + 1); // re-triggers the single guarded fetch above — no duplicate logic
+      setForm({ detail: '', entryType: 'diagnosis', drugCode: '', dosage: '' });
+      setRefreshKey(k => k + 1);
     } catch (err) {
       setError(err.message);
     }
@@ -269,15 +280,44 @@ export default function ClinicPage() {
             <label className="block text-xs font-semibold text-h-text mb-1.5">Patient</label>
             <input className="input-field bg-h-bg text-h-text-muted" value={selected?.full_name || ''} disabled readOnly />
           </div>
-          <div>
-            <label className="block text-xs font-semibold text-h-text mb-1.5">
-              {isNurse ? 'Vitals (BP / HR / Temp)' : 'Details'}
-            </label>
-            <textarea rows={3}
-              placeholder={isNurse ? 'e.g. BP 120/80 · HR 72 bpm · Temp 36.6°C' : 'Describe the diagnosis or finding…'}
-              value={form.detail} onChange={e => setForm(f => ({ ...f, detail: e.target.value }))}
-              className="input-field resize-none" />
-          </div>
+          {!isNurse && (
+            <div>
+              <label className="block text-xs font-semibold text-h-text mb-1.5">Entry type</label>
+              <div className="flex gap-2">
+                {['diagnosis', 'prescription'].map(t => (
+                  <button key={t} onClick={() => setForm(f => ({ ...f, entryType: t }))}
+                    className={`flex-1 py-2 rounded-xl text-xs font-semibold border transition-colors ${form.entryType === t ? 'bg-h-blue text-white border-h-blue' : 'border-h-border text-h-text-muted hover:bg-h-bg'}`}>
+                    {t.charAt(0).toUpperCase() + t.slice(1)}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+          {(isNurse || form.entryType === 'diagnosis') && (
+            <div>
+              <label className="block text-xs font-semibold text-h-text mb-1.5">
+                {isNurse ? 'Vitals (BP / HR / Temp)' : 'Details'}
+              </label>
+              <textarea rows={3}
+                placeholder={isNurse ? 'e.g. BP 120/80 · HR 72 bpm · Temp 36.6°C' : 'Describe the diagnosis or finding…'}
+                value={form.detail} onChange={e => setForm(f => ({ ...f, detail: e.target.value }))}
+                className="input-field resize-none" />
+            </div>
+          )}
+          {!isNurse && form.entryType === 'prescription' && (
+            <>
+              <div>
+                <label className="block text-xs font-semibold text-h-text mb-1.5">Drug code</label>
+                <input className="input-field" placeholder="e.g. AMOXICILLIN-500MG"
+                  value={form.drugCode} onChange={e => setForm(f => ({ ...f, drugCode: e.target.value.toUpperCase() }))} />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-h-text mb-1.5">Dosage</label>
+                <input className="input-field" placeholder="e.g. 1 capsule three times daily"
+                  value={form.dosage} onChange={e => setForm(f => ({ ...f, dosage: e.target.value }))} />
+              </div>
+            </>
+          )}
           <div className="flex gap-2 pt-1">
             <button onClick={() => setModal(false)} className="btn-secondary flex-1">Cancel</button>
             <button onClick={handleSave} className="btn-primary flex-1">Save entry</button>
