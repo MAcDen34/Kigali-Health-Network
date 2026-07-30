@@ -8,6 +8,7 @@ class PrescriptionCreate(BaseModel):
     doctor_id: UUID
     drug_code: str
     dosage: str
+    patient_id: Optional[UUID] = None
 
 class PrescriptionOut(PrescriptionCreate):
     id: UUID
