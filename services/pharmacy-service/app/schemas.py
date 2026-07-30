@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from uuid import UUID
 from datetime import datetime
 from typing import Optional
@@ -14,8 +14,7 @@ class PrescriptionOut(PrescriptionCreate):
     id: UUID
     status: str
     created_at: datetime
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class DispensingRecordCreate(BaseModel):
     prescription_id: UUID
@@ -24,8 +23,7 @@ class DispensingRecordCreate(BaseModel):
 class DispensingRecordOut(DispensingRecordCreate):
     id: UUID
     dispensed_at: datetime
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class InteractionFlagCreate(BaseModel):
     prescription_id: UUID
@@ -35,5 +33,4 @@ class InteractionFlagCreate(BaseModel):
 class InteractionFlagOut(InteractionFlagCreate):
     id: UUID
     created_at: datetime
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
