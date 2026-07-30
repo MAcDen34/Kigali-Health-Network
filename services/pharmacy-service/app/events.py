@@ -13,7 +13,7 @@ def publish_prescription_created(prescription):
     """
     redis_client.xadd(STREAM_NAME, {
         "prescription_id": str(prescription.id),
-        "patient_id":      str(prescription.record_id),
+        "patient_id":      str(prescription.patient_id) if prescription.patient_id else str(prescription.record_id),
         "drug_code":       prescription.drug_code,
         "dosage":          prescription.dosage,
     })
