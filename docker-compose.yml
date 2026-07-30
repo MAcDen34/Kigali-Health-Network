@@ -2,6 +2,11 @@ services:
   postgres:
     image: postgres:16
     restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -20,12 +25,22 @@ services:
   redis:
     image: redis:7
     restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     ports:
       - "6379:6379"
 
   records-service:
     build: ./services/records-service
     restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     command: sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
     ports:
       - "8000:8000"
@@ -44,6 +59,11 @@ services:
   clinical-service:
     build: ./services/clinical-service
     restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     ports:
       - "8001:8001"
     environment:
@@ -62,6 +82,11 @@ services:
   pharmacy-service:
     build: ./services/pharmacy-service
     restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     ports:
       - "8002:8002"
     environment:
@@ -79,6 +104,11 @@ services:
   admin-service:
     build: ./services/admin-service
     restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     ports:
       - "8004:8004"
     environment:
@@ -96,6 +126,11 @@ services:
   notification-service:
     build: ./services/notification-service
     restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     ports:
       - "8005:8005"
     environment:
@@ -112,6 +147,11 @@ services:
   insurance-service:
     build: ./services/insurance-service
     restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     ports:
       - "8003:8003"
     environment:
