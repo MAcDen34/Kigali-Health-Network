@@ -75,7 +75,7 @@ export default function PharmacyPage() {
   if (error) return <p className="text-sm text-red-500">Error: {error}</p>;
 
   const list = prescriptions.filter(rx => {
-    const patientName = patientMap[rx.record_id] || '';
+    const patientName = patientMap[rx.patient_id] || '';
     const matchQ = patientName.toLowerCase().includes(query.toLowerCase()) ||
       rx.drug_code.toLowerCase().includes(query.toLowerCase());
     const flagged = !!flagMap[rx.id];
@@ -189,7 +189,7 @@ export default function PharmacyPage() {
                         <Badge tone={STATUS_TONE[rx.status] || 'gray'}>{rx.status}</Badge>
                       </div>
                       <p className="text-xs text-h-text-muted">
-                        {patientMap[rx.record_id] || 'Unknown patient'} · {rx.dosage} · {new Date(rx.created_at).toLocaleDateString()}
+                        {patientMap[rx.patient_id] || 'Unknown patient'} · {rx.dosage} · {new Date(rx.created_at).toLocaleDateString()}
                       </p>
                       {flag && (
                         <div className="flex items-center gap-1.5 mt-2">
