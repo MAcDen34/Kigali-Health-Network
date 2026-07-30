@@ -194,7 +194,7 @@ export default function RecordsPage() {
                         {m.content?.icd_code && <span className="text-[11px] font-mono text-h-text-light">{m.content.icd_code}</span>}
                         <span className="text-xs text-h-text-muted ml-auto">{new Date(m.created_at).toLocaleDateString()}</span>
                       </div>
-                      <p className="text-sm text-h-text">{m.content?.detail}</p>
+                      <p className="text-sm text-h-text">{m.content?.detail || m.content?.note || m.content?.description || ""}</p>
                       <p className="text-xs text-h-text-muted mt-1">{m.content?.institution} · {m.content?.doctor}</p>
                     </div>
                   </div>
