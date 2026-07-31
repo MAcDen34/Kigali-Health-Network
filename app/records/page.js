@@ -4,7 +4,7 @@ import { useApp } from '@/context/AppContext';
 import Badge from '@/components/ui/Badge';
 import KPICard from '@/components/ui/KPICard';
 import { ShieldCheck, ShieldOff, Clock3, FileText, AlertTriangle, CheckCircle2, WifiOff } from 'lucide-react';
-import { getPatient, listMyConsents, listMyMedicalRecords, listMyAuditLog, revokeConsent } from '@/lib/api';
+import { getPatient, listMyConsents, listMyMedicalRecords, listMyAuditLog, revokeConsent, grantConsent } from '@/lib/api';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 const TYPE_TONE = { Diagnosis: 'blue', 'Lab Result': 'teal', Vitals: 'green', Prescription: 'purple' };
@@ -63,6 +63,16 @@ export default function RecordsPage() {
   const handleRevoke = async (consentId) => {
     try {
       await revokeConsent(consentId, token);
+      const updated = await listMyConsents(patientId, token);
+      setConsents(updated);
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  const handleGrant = async (institutionId) => {
+    try {
+      await grantConsent(patientId, institutionId, token);
       const updated = await listMyConsents(patientId, token);
       setConsents(updated);
     } catch (err) {
@@ -229,10 +239,15 @@ export default function RecordsPage() {
                           {isActive ? <CheckCircle2 className="w-3 h-3" /> : null}
                           {isActive ? 'Active' : 'Revoked'}
                         </Badge>
-                        {isActive && (
+                        {isActive ? (
                           <button onClick={() => handleRevoke(c.id)}
                             className="text-xs font-semibold text-h-blue hover:text-h-blue-dark transition-colors">
                             Revoke
+                          </button>
+                        ) : (
+                          <button onClick={() => handleGrant(c.institution_id)}
+                            className="text-xs font-semibold text-h-teal hover:text-h-teal-dark transition-colors">
+                            Restore access
                           </button>
                         )}
                       </div>
